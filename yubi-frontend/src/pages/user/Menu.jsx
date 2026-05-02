@@ -1,0 +1,5 @@
+import { useMemo, useState } from "react";
+import { products } from "../../data";
+import { ProductCard, RiderAnimation, colors, heading } from "./HomeSections";
+import { useWindowSize } from "../../hooks/useWindowSize";
+export default function Menu(){const [q,setQ]=useState(""); const {width}=useWindowSize(); const items=useMemo(()=>products.filter(p=>p.category==="food"&&p.name.toLowerCase().includes(q.toLowerCase())),[q]); return <main style={{maxWidth:1280,margin:"0 auto",padding:width<=768?"24px 16px":"60px 40px",color:colors.text}}><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:20,marginBottom:20}}><div><h1 style={{...heading,margin:0}}>Our Menu</h1><p style={{color:colors.text}}>Chef-crafted, ready in 30 minutes</p></div><RiderAnimation/></div><input value={q} onChange={e=>setQ(e.target.value)} placeholder="Search dishes..." style={{width:"100%",padding:13,border:"1px solid #D6E8D6",borderRadius:8,color:"#1A1A1A",marginBottom:20}}/><div style={{display:"grid",gridTemplateColumns:width<=768?"1fr":width<=1024?"repeat(2,1fr)":"repeat(4,1fr)",gap:18}}>{items.map(p=><ProductCard key={p.id} product={p}/>)}</div></main>}

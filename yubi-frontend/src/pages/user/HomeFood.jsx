@@ -1,0 +1,104 @@
+import { useEffect } from "react";
+import { useLocation } from "react-router-dom";
+import { BannerSlider, CategoryImageSection, MealImageGroupsSection, ProductMarqueeSection, PopularProductsScrollSection, colors } from "./HomeSections";
+import MidBannerSlider from "../../components/shared/MidBannerSlider";
+import { products } from "../../data";
+import { foodTextBanners } from "../../data/banners";
+import homeBanner from "../../assets/homebanner.jpg.jpeg";
+import breakfastImg from "../../assets/breakfast.jpg";
+import lunchImg from "../../assets/Lunch.jpg";
+import dinnerImg from "../../assets/Dinner 2.jpg";
+
+const foodBanners = [
+  { id: 1, headline: "Fresh Food Delivered Hot", subheadline: "Kitchen-fresh meals at your door", cta: "Order Food", route: "/menu", image: homeBanner },
+  { id: 2, headline: "Chef Crafted Daily", subheadline: "Comfort dishes, snacks and sweets", cta: "See Menu", route: "/menu", image: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=1600&auto=format&fit=crop" },
+  { id: 3, headline: "Lunch Sorted Fast", subheadline: "Quick delivery for busy days", cta: "Order Now", route: "/menu", image: "https://images.unsplash.com/photo-1543353071-873f17a7a088?w=1600&auto=format&fit=crop" },
+];
+
+const homeShellStyle = {
+  minHeight: "100vh",
+  background: "linear-gradient(180deg, #feeebf 0%, #fff8e7 18%, #f6ffe6 38%, #eaffd6 55%, #f1fff4 72%, #ffffff 100%)",
+  fontFamily: "'Montserrat', sans-serif",
+};
+
+export default function HomeFood() {
+  const location = useLocation();
+  const food = products.filter((p) => p.category === "food");
+  const bestSellers = [...food, ...food.slice(0, 3)];
+  const chefSpecials = [...food.slice().reverse(), ...food.slice(0, 2)];
+  const breakfast = [food[1], food[2], food[4], food[1]].filter(Boolean);
+  const lunch = [food[0], food[3], food[4], food[0]].filter(Boolean);
+  const dinner = [food[3], food[0], food[2], food[3]].filter(Boolean);
+  const scrollToSection = (id) => {
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    window.history.replaceState(null, "", `/home/food#${id}`);
+  };
+  const foodCategories = [
+    { name: "Curries", route: "/home/food#curries", onClick: () => scrollToSection("curries"), image: food[0]?.image || foodBanners[0].image, imagePosition: "center 52%" },
+    { name: "Biryani", route: "/home/food#biryani", onClick: () => scrollToSection("biryani"), image: food[1]?.image || foodBanners[2].image, imagePosition: "center 58%" },
+    { name: "Snacks", route: "/home/food#snacks", onClick: () => scrollToSection("snacks"), image: food[2]?.image || foodBanners[1].image, imagePosition: "center 48%" },
+    { name: "Breakfast", route: "/home/food#breakfast", onClick: () => scrollToSection("breakfast"), image: breakfastImg, imagePosition: "center 50%" },
+    { name: "Lunch", route: "/home/food#lunch", onClick: () => scrollToSection("lunch"), image: lunchImg, imagePosition: "center 52%" },
+    { name: "Dinner", route: "/home/food#dinner", onClick: () => scrollToSection("dinner"), image: dinnerImg, imagePosition: "center 50%" },
+  ];
+  const mealGroups = [
+    {
+      title: "Breakfast",
+      subtitle: "Morning plates with crisp, warm flavours",
+      to: "/home/food#breakfast",
+      onClick: () => scrollToSection("breakfast"),
+      images: [breakfastImg, breakfastImg],
+    },
+    {
+      title: "Lunch",
+      subtitle: "Filling favourites for busy afternoons",
+      to: "/home/food#lunch",
+      onClick: () => scrollToSection("lunch"),
+      images: [lunchImg, lunchImg],
+    },
+    {
+      title: "Dinner",
+      subtitle: "Rich comfort dishes for the table",
+      to: "/home/food#dinner",
+      onClick: () => scrollToSection("dinner"),
+      images: [dinnerImg, dinnerImg],
+    },
+  ];
+
+  useEffect(() => {
+    if (!location.hash) return;
+    const el = document.getElementById(location.hash.slice(1));
+    if (el) window.setTimeout(() => el.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
+  }, [location.hash]);
+
+  return (
+    <div style={homeShellStyle}>
+      <main style={{ color: colors.text, background: "transparent" }}>
+        <BannerSlider items={foodBanners} />
+        <CategoryImageSection title="Food Categories" items={foodCategories} titleInCard borderless />
+        <PopularProductsScrollSection title="Popular Food" items={food} />
+        <MidBannerSlider items={foodTextBanners} />
+        <div id="curries">
+          <ProductMarqueeSection title="Best Sellers" items={bestSellers} direction="left" durationSec={42} paddingTop="40px" />
+        </div>
+        <div id="biryani">
+          <ProductMarqueeSection title="Chef Specials" items={chefSpecials} direction="right" durationSec={44} paddingTop="28px" />
+        </div>
+        <MealImageGroupsSection groups={mealGroups} />
+        <div id="breakfast">
+          <ProductMarqueeSection title="Breakfast" items={breakfast} direction="left" durationSec={38} paddingTop="34px" />
+        </div>
+        <div id="lunch">
+          <ProductMarqueeSection title="Lunch" items={lunch} direction="right" durationSec={40} paddingTop="28px" />
+        </div>
+        <div id="dinner">
+          <ProductMarqueeSection title="Dinner" items={dinner} direction="left" durationSec={42} paddingTop="28px" />
+        </div>
+        <div id="snacks">
+          <ProductMarqueeSection title="Snacks" items={breakfast} direction="right" durationSec={39} paddingTop="28px" />
+        </div>
+      </main>
+    </div>
+  );
+}
