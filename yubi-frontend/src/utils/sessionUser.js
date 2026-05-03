@@ -66,10 +66,10 @@ export function adminSessionFromLoginResponse(res, phoneOrEmailInput = "") {
 }
 
 /**
- * Normalize POST /delivery/login into stored `yubiUser` (role delivery + Bearer token).
+ * Normalize POST /delivery-partner/login into stored `yubiUser` (role delivery; Bearer token when API returns one).
  */
 export function deliverySessionFromLoginResponse(res, phoneInput = "") {
-  if (!res || typeof res !== "object" || res.success === false) return null;
+  if (!res || typeof res !== "object" || res.success === false || res.status === "error") return null;
 
   const nested =
     res.user ??
@@ -83,33 +83,47 @@ export function deliverySessionFromLoginResponse(res, phoneInput = "") {
     pickToken(res) ??
     pickToken(res.data ?? {}) ??
     pickToken(nested);
-  if (!token) return null;
+
+  const hasUserPayload =
+    nested &&
+    typeof nested === "object" &&
+    (nested.phone != null ||
+      nested.user_id != null ||
+      nested.delivery_partner_id != null ||
+      nested.mobile != null);
+
+  /** JWT and/or `user` object from POST /delivery-partner/login (backend may omit top-level `status`). */
+  if (!token && !hasUserPayload) return null;
 
   const input = String(phoneInput ?? "").trim();
   const phone = String(
     nested.phone ?? nested.mobile ?? res.phone ?? res.mobile ?? (input || ""),
   ).trim();
 
-  const id = coalesceId(
-    nested.id,
+  const partnerDbId = coalesceId(
+    nested.delivery_partner_id,
     nested.partner_id,
-    nested.user_id,
-    res.partner_id,
+    nested.id,
     res.delivery_partner_id,
-    res.id,
+    res.partner_id,
   );
+  const userDbId = coalesceId(nested.user_id, res.user_id);
 
   const base = {
     role: "delivery",
-    token,
+    ...(token ? { token } : {}),
     phone: phone || input,
     name: String(nested.name ?? res.name ?? ""),
     email: String(nested.email ?? res.email ?? ""),
   };
 
-  if (id !== undefined) {
-    base.id = id;
-    base.user_id = id;
+  if (partnerDbId !== undefined) {
+    base.id = partnerDbId;
+    base.partnerId = partnerDbId;
+    base.delivery_partner_id = partnerDbId;
+  }
+  if (userDbId !== undefined) {
+    base.user_id = userDbId;
   }
 
   return base;

@@ -39,6 +39,7 @@ export function mapCartLineFromApi(raw, index) {
     "";
   const image = resolveUploadUrl(imageRaw);
   const variant = String(raw?.variant ?? raw?.pack_size ?? raw?.unit ?? "").trim();
+  const category = String(raw?.category ?? raw?.product?.category ?? "").trim().toLowerCase();
   const cartItemId = String(id);
   return {
     key: cartItemId,
@@ -49,6 +50,7 @@ export function mapCartLineFromApi(raw, index) {
     qty,
     image,
     variant,
+    category,
   };
 }
 

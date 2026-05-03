@@ -1005,6 +1005,7 @@ router.get("/cart", requireAuth, async (req, res) => {
         ci.cart_item_id, 
         ci.product_id, 
         p.product_name, 
+        p.category,
         p.image_url, 
         ci.quantity, 
         ci.price, 

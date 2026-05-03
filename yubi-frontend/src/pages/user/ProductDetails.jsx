@@ -1,9 +1,11 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Minus, Plus, ShoppingCart, Star } from "lucide-react";
 import { products } from "../../data";
 import { useCart } from "../../context/CartContext";
 import { useWindowSize } from "../../hooks/useWindowSize";
+import { foodAPI, getApiErrorMessage } from "../../lib/api";
+import { extractProductList, mapFoodProductFromApi } from "../../lib/foodProductUtils";
 
 const reviews = [
   { id: 1, name: "Rohit S.", rating: 5, text: "Great quality and very fresh. Exactly as described." },
@@ -25,10 +27,70 @@ export default function ProductDetails() {
   const navigate = useNavigate();
   const { addItem } = useCart();
   const [qty, setQty] = useState(1);
-  const product = useMemo(() => products.find((item) => item.id === id), [id]);
+  const [apiProducts, setApiProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const product = useMemo(() => {
+    const key = String(id ?? "");
+    return apiProducts.find((item) => String(item.id) === key) || products.find((item) => String(item.id) === key);
+  }, [apiProducts, id]);
   const isMobile = width <= 900;
 
-  if (!product) return <main style={{ maxWidth: 1200, margin: "0 auto", padding: "40px 16px", color: "#1A1A1A" }}>Product not found.</main>;
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      setError("");
+      try {
+        const [productsRes, foodsSpicesRes, agroRes] = await Promise.allSettled([
+          foodAPI.getProducts(),
+          foodAPI.getFoodsSpices(),
+          foodAPI.getAgroProducts(),
+        ]);
+
+        const liveProducts = [];
+        if (productsRes.status === "fulfilled") {
+          liveProducts.push(...extractProductList(productsRes.value).map(mapFoodProductFromApi));
+        }
+        if (foodsSpicesRes.status === "fulfilled") {
+          liveProducts.push(...extractProductList(foodsSpicesRes.value).map(mapFoodProductFromApi));
+        }
+        if (agroRes.status === "fulfilled") {
+          liveProducts.push(
+            ...extractProductList(agroRes.value).map((raw, index) => ({
+              ...mapFoodProductFromApi(raw, index),
+              category: "agro",
+            })),
+          );
+        }
+
+        const byId = new Map();
+        liveProducts.forEach((item) => {
+          if (item?.id != null && !byId.has(String(item.id))) byId.set(String(item.id), item);
+        });
+        if (!cancelled) setApiProducts([...byId.values()]);
+      } catch (err) {
+        if (!cancelled) setError(getApiErrorMessage(err, "Could not load product details."));
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (loading && !product) {
+    return <main style={{ maxWidth: 1200, margin: "0 auto", padding: "40px 16px", color: "#607060" }}>Loading product details...</main>;
+  }
+
+  if (!product) {
+    return (
+      <main style={{ maxWidth: 1200, margin: "0 auto", padding: "40px 16px", color: "#1A1A1A" }}>
+        {error ? <p style={{ color: "#C62828", fontWeight: 700 }}>{error}</p> : "Product not found."}
+      </main>
+    );
+  }
 
   const isSpice = product.category === "spices";
   const basePrice = isSpice && qty >= 5 ? (product.bulkPrice || product.price) : product.price;

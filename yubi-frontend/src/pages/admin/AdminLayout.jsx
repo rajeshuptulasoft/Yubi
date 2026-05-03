@@ -1,14 +1,14 @@
 ﻿import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { BarChart3, BookOpen, Boxes, ClipboardList, Leaf, Menu, MessageSquare, Package, ShoppingBag, Truck, Users } from "lucide-react";
+import { BarChart3, BookOpen, Boxes, ClipboardList, Leaf, Menu, MessageSquare, Truck } from "lucide-react";
 import { useWindowSize } from "../../hooks/useWindowSize";
 import yubiLogo from "../../assets/yubi.png";
 
 const items = [
   [BarChart3, "Dashboard", "/admin/dashboard"],
-  [ShoppingBag, "Food Orders", "/admin/orders/food"],
-  [Package, "Spice Orders", "/admin/orders/spices"],
-  [Users, "User Data", "/admin/users"],
+  // [ShoppingBag, "Food Orders", "/admin/orders/food"],
+  // [Package, "Spice Orders", "/admin/orders/spices"],
+  // [Users, "User Data", "/admin/users"],
   [ClipboardList, "Order Details Food", "/admin/order-details/food"],
   [ClipboardList, "Order Details Spices", "/admin/order-details/spices"],
   [Boxes, "Food Products", "/admin/products/food"],

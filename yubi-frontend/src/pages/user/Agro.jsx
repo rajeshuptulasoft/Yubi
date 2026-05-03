@@ -4,6 +4,7 @@ import MidBannerSlider from "../../components/shared/MidBannerSlider";
 import { foodAPI, getApiErrorMessage } from "../../lib/api";
 import { extractProductList, mapFoodProductFromApi } from "../../lib/foodProductUtils";
 import { agroTextBanners } from "../../data/banners";
+import { useWindowSize } from "../../hooks/useWindowSize";
 
 const agroBanners = [
   { id: 1, headline: "Organic Farming Solutions", subheadline: "Seeds, tools, and fertilizers for sustainable agriculture", cta: "Explore Now", route: "/agro", image: "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=1600&auto=format&fit=crop" },
@@ -18,6 +19,7 @@ const agroCategories = [
 ];
 
 export default function Agro() {
+  const { width } = useWindowSize();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -49,10 +51,10 @@ export default function Agro() {
     <main style={{ background: "#FFFFFF", color: colors.text }}>
       <BannerSlider items={agroBanners} />
 
-      <section style={{ maxWidth: 1200, margin: "0 auto", padding: "40px 24px 0" }}>
+      <section style={{ maxWidth: 1200, margin: "0 auto", padding: width <= 768 ? "28px 16px 0" : "40px 24px 0" }}>
         <h1 style={{
           fontFamily: "'Plus Jakarta Sans', 'DM Sans', sans-serif",
-          fontSize: 42,
+          fontSize: width <= 768 ? 32 : 42,
           fontWeight: 700,
           margin: "0 0 10px 0",
           color: "#1A2E1A",
@@ -71,7 +73,6 @@ export default function Agro() {
         </p>
       </section>
       <CategoryImageSection title="Agro Categories" items={agroCategories} titleInCard borderless />
-      <MidBannerSlider items={agroTextBanners} />
 
       {loading ? (
         <section style={{ maxWidth: 1280, margin: "0 auto", padding: "48px 24px", textAlign: "center", color: "#5C7A5C" }}>
@@ -88,6 +89,7 @@ export default function Agro() {
       ) : (
         <>
           <ProductMarqueeSection title="Agro Best Picks" items={items} direction="left" durationSec={46} paddingTop="40px" />
+          <MidBannerSlider items={agroTextBanners} />
           <ProductGridSection title="All Agro Products" items={items} />
         </>
       )}

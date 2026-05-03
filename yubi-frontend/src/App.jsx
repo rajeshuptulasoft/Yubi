@@ -10,6 +10,13 @@ import "./index.css";
 
 const queryClient = new QueryClient();
 
+/** Must match Vite `base` so client routes work when the app is hosted under a subpath */
+const routerBasename = (() => {
+  const b = import.meta.env.BASE_URL || "/";
+  if (b === "/") return undefined;
+  return b.replace(/\/$/, "");
+})();
+
 function ToastHost() {
   if (typeof document === "undefined") return null;
   return createPortal(
@@ -27,7 +34,7 @@ function ToastHost() {
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
+      <BrowserRouter {...(routerBasename ? { basename: routerBasename } : {})}>
         <AuthProvider>
           <CartProvider>
             <NotificationProvider>

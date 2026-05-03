@@ -67,7 +67,7 @@ export async function createOrderExample() {
     };
 
     const response = await ordersAPI.createOrder(orderData);
-    console.log('Order created:', response);
+    // console.log('Order created:', response);
     toast.success(`Order created: #${response.id}`);
     return response;
   } catch (error) {
@@ -97,7 +97,7 @@ export async function customAPICallExample() {
     const response = await axiosInstance.get('/custom/endpoint', {
       params: { filter: 'active' },
     });
-    console.log('Response:', response);
+    // console.log('Response:', response);
     return response;
   } catch (error) {
     console.error('API Error:', error);
@@ -150,7 +150,7 @@ export async function uploadImageExample(file) {
       }
     );
 
-    console.log('Upload successful:', response);
+    // console.log('Upload successful:', response);
     toast.success('Image uploaded successfully');
     return response;
   } catch (error) {

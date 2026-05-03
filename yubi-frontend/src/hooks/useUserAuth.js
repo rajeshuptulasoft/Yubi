@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { authAPI, getApiErrorMessage, getLoginFailureMessage } from '@/lib/api';
+import { authAPI, foodAPI, getApiErrorMessage, getLoginFailureMessage } from '@/lib/api';
 import { sessionUserFromAuthResponse } from '@/utils/sessionUser';
 import { toast } from 'sonner';
 
@@ -81,8 +81,16 @@ export function useUserAuth() {
   const logout = async () => {
     setLoading(true);
     try {
-      // Call logout API if needed
-      await authAPI.logout();
+      let u = null;
+      try {
+        const raw = localStorage.getItem('yubiUser');
+        u = raw ? JSON.parse(raw) : null;
+      } catch {
+        u = null;
+      }
+      if (u?.token && u?.role !== 'admin' && u?.role !== 'delivery') {
+        await foodAPI.logout();
+      }
     } catch (error) {
       console.error('Logout API error:', error);
     } finally {

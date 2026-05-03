@@ -28,6 +28,13 @@ export default function OrderHistory() {
   const [cancelId, setCancelId] = useState(null);
   /** Snapshots from GET /food/order-status/:order_id — keyed by order id string */
   const [statusByOrderId, setStatusByOrderId] = useState({});
+  const [reviewsByOrderId, setReviewsByOrderId] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("yubiOrderReviews") || "{}");
+    } catch {
+      return {};
+    }
+  });
 
   const apiOrderId = (o) => (o.numericId != null ? o.numericId : o.id);
 
@@ -242,6 +249,19 @@ export default function OrderHistory() {
                   cancelledAt={merged.cancelledAt}
                   trackingStepIndex={merged.trackingStepIndex}
                 />
+                {track.mode === "complete" && (
+                  <OrderReviewCard
+                    orderId={oid}
+                    saved={reviewsByOrderId[String(oid)]}
+                    onSave={(review) => {
+                      setReviewsByOrderId((prev) => {
+                        const next = { ...prev, [String(oid)]: review };
+                        localStorage.setItem("yubiOrderReviews", JSON.stringify(next));
+                        return next;
+                      });
+                    }}
+                  />
+                )}
               </div>
 
               <p style={{ margin: "12px 0 0", fontSize: 13, fontWeight: 700, color: "#2E7D32" }}>Tap for details</p>
@@ -268,6 +288,67 @@ export default function OrderHistory() {
         onCancelled={() => void loadOrders()}
       />
     </main>
+  );
+}
+
+function OrderReviewCard({ orderId, saved, onSave }) {
+  const [rating, setRating] = useState(saved?.rating || 0);
+  const [review, setReview] = useState(saved?.review || "");
+  const submitted = Boolean(saved);
+
+  const submit = () => {
+    if (!rating) return;
+    onSave({
+      rating,
+      review: review.trim(),
+      submittedAt: new Date().toISOString(),
+    });
+  };
+
+  return (
+    <div style={reviewCard}>
+      <div>
+        <strong style={{ color: "#1A2E1A" }}>Review and rating</strong>
+        <p style={{ margin: "4px 0 0", color: "#607060", fontSize: 13 }}>
+          {submitted ? "Thanks for sharing your feedback." : `Tell us about order #${orderId}.`}
+        </p>
+      </div>
+      <div style={{ display: "flex", gap: 6, marginTop: 12 }}>
+        {[1, 2, 3, 4, 5].map((value) => (
+          <button
+            key={value}
+            type="button"
+            disabled={submitted}
+            onClick={() => setRating(value)}
+            style={{
+              ...starBtn,
+              color: value <= rating ? "#FFB300" : "#D1D5DB",
+              cursor: submitted ? "default" : "pointer",
+            }}
+            aria-label={`${value} star rating`}
+          >
+            ★
+          </button>
+        ))}
+      </div>
+      <textarea
+        disabled={submitted}
+        value={review}
+        onChange={(e) => setReview(e.target.value)}
+        placeholder="Write a short review"
+        style={reviewInput}
+      />
+      {!submitted && (
+        <button
+          type="button"
+          disabled={!rating}
+          onClick={submit}
+          style={{ ...primaryBtn, opacity: rating ? 1 : 0.55, marginTop: 10 }}
+        >
+          Submit review
+        </button>
+      )}
+    </div>
   );
 }
 
@@ -380,4 +461,29 @@ const primaryBtn = {
   fontWeight: 800,
   cursor: "pointer",
   fontSize: 14,
+};
+const reviewCard = {
+  marginTop: 14,
+  background: "#F8FCF8",
+  border: "1px solid #D6E8D6",
+  borderRadius: 14,
+  padding: 16,
+};
+const starBtn = {
+  background: "transparent",
+  border: "none",
+  fontSize: 26,
+  lineHeight: 1,
+  padding: 0,
+};
+const reviewInput = {
+  width: "100%",
+  minHeight: 78,
+  marginTop: 12,
+  border: "1px solid #D6E8D6",
+  borderRadius: 12,
+  padding: 12,
+  color: "#1A1A1A",
+  background: "#FFFFFF",
+  resize: "vertical",
 };

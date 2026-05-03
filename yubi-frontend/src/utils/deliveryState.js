@@ -24,6 +24,15 @@ export function getCurrentDeliveryUser() {
   }
 }
 
+/** Positive numeric id for `/delivery-partner/*` query params (from login session). */
+export function getDeliveryPartnerIdFromSession() {
+  const user = getCurrentDeliveryUser();
+  if (!user || user.role !== "delivery") return null;
+  const raw = user.partnerId ?? user.delivery_partner_id ?? user.id;
+  const n = Number(raw);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
 export function getCurrentDeliveryPartner() {
   const user = getCurrentDeliveryUser();
   const partners = getDeliveryPartners();
@@ -37,9 +46,13 @@ export function getCurrentDeliveryPartner() {
           String(partner.phone ?? "").replace(/\D/g, "") === phoneDigits),
     ) ?? null;
   if (bySeed) return bySeed;
-  if (user?.role === "delivery" && user?.token) {
+  const dpId = user?.partnerId ?? user?.delivery_partner_id;
+  if (
+    user?.role === "delivery" &&
+    (user?.token || dpId != null || user?.user_id != null)
+  ) {
     return {
-      id: user.partnerId ?? "delivery-api",
+      id: dpId ?? user?.user_id ?? user.partnerId ?? "delivery-api",
       name: user.name || "Delivery partner",
       email: user.email ?? "",
       phone: user.phone ?? "",

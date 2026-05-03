@@ -12,6 +12,18 @@ import {
 import { formatDeliveryAddress } from "@/components/delivery/DeliveryAddresses";
 
 const fontHeading = "'Plus Jakarta Sans', 'DM Sans', Montserrat, sans-serif";
+const MIN_SPICE_ORDER_QTY = 70;
+
+function isSpiceLine(line) {
+  const category = String(line?.category ?? "").trim().toLowerCase();
+  return category === "spices" || category === "spice" || category.includes("spice");
+}
+
+function getSpiceQuantityError(lines) {
+  const invalid = lines.find((line) => isSpiceLine(line) && Number(line.qty) < MIN_SPICE_ORDER_QTY);
+  if (!invalid) return "";
+  return `${invalid.name || "Spice item"} quantity must be at least ${MIN_SPICE_ORDER_QTY} to place the order.`;
+}
 
 export default function Checkout() {
   const { user, openAuthModal, addresses, addressesLoading } = useAuth();
@@ -122,6 +134,11 @@ export default function Checkout() {
     }
     if (!cartLines.length) {
       toast.error("Your cart is empty.");
+      return;
+    }
+    const spiceQuantityError = getSpiceQuantityError(cartLines);
+    if (spiceQuantityError) {
+      toast.error(spiceQuantityError);
       return;
     }
     if (!codSelected) {
@@ -327,7 +344,14 @@ export default function Checkout() {
             {!showCodStep ? (
               <button
                 type="button"
-                onClick={() => setShowCodStep(true)}
+                onClick={() => {
+                  const spiceQuantityError = getSpiceQuantityError(cartLines);
+                  if (spiceQuantityError) {
+                    toast.error(spiceQuantityError);
+                    return;
+                  }
+                  setShowCodStep(true);
+                }}
                 style={{ ...primaryBtn, width: "100%", marginTop: 20, justifyContent: "center" }}
               >
                 Place order

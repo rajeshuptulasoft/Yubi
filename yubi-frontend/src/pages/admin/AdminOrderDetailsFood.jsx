@@ -79,6 +79,12 @@ function partnerAvailable(p) {
   return st === "available" || st === "active";
 }
 
+function hasAssignedDeliveryPartner(order) {
+  const id = order?.delivery_partner_id;
+  const name = String(order?.delivery_partner_name ?? "").trim();
+  return id !== null && id !== undefined && id !== "" && id !== false && id !== 0 && id !== "0" || Boolean(name);
+}
+
 function fmtDateTime(iso) {
   if (iso == null || iso === "") return "—";
   try {
@@ -318,7 +324,7 @@ export function Details({ type }) {
                       alignItems: "center",
                     }}
                   >
-                    {order.status === "pending" && (
+                    {!hasAssignedDeliveryPartner(order) && (
                       <button
                         type="button"
                         className="admin-add-btn"

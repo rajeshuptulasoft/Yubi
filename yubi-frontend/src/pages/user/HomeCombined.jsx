@@ -17,16 +17,6 @@ import breakfastImg from "../../assets/breakfast.jpg";
 import lunchImg from "../../assets/Lunch.jpg";
 import dinnerImg from "../../assets/Dinner 2.jpg";
 
-function getStoredUserToken() {
-  try {
-    const raw = localStorage.getItem("yubiUser");
-    if (!raw) return null;
-    return JSON.parse(raw)?.token || null;
-  } catch {
-    return null;
-  }
-}
-
 const homeCategories = [
   { name: "Food", route: "/home/food", image: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&auto=format&fit=crop" },
   { name: "Spices", route: "/home/spices", image: "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=800&auto=format&fit=crop" },
@@ -44,8 +34,11 @@ const homeShellStyle = {
 export default function HomeCombined() {
   /** GET /food/products — public; mapped rows replace static catalog for all product-driven sections when non-empty. */
   const [apiProducts, setApiProducts] = useState(null);
-  /** When logged in and GET /food/foods-spices succeeds, this array drives all spice sections; otherwise spices from catalog. */
-  const [apiSpices, setApiSpices] = useState(null);
+  /**
+   * GET /food/foods-spices (public). Only rows that normalize to `category === "spices"` power spice carousels;
+   * ProductCard then shows Enquiry + Add to cart like `/home/spices`.
+   */
+  const [foodsSpicesRows, setFoodsSpicesRows] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -84,17 +77,13 @@ export default function HomeCombined() {
 
   useEffect(() => {
     let cancelled = false;
-    if (!getStoredUserToken()) return undefined;
     (async () => {
       try {
         const res = await foodAPI.getFoodsSpices();
-        const list = extractProductList(res).map((raw, i) => ({
-          ...mapFoodProductFromApi(raw, i),
-          category: "spices",
-        }));
-        if (!cancelled) setApiSpices(list);
+        const list = extractProductList(res).map((raw, i) => mapFoodProductFromApi(raw, i));
+        if (!cancelled) setFoodsSpicesRows(list);
       } catch {
-        if (!cancelled) setApiSpices(null);
+        if (!cancelled) setFoodsSpicesRows([]);
       }
     })();
     return () => {
@@ -116,13 +105,19 @@ export default function HomeCombined() {
     [catalog],
   );
 
-  /** Spices sections when not using GET /food/foods-spices: spices from /food/products catalog */
+  /** Spices when API has no spice rows or before load: from /food/products + static catalog */
   const spicesFallback = useMemo(
     () => catalog.filter((product) => product.category === "spices"),
     [catalog],
   );
-  /** Authenticated: GET /food/foods-spices; otherwise spices from products API/static catalog */
-  const spices = apiSpices !== null ? apiSpices : spicesFallback;
+
+  const spicesFromFoodsSpicesApi = useMemo(() => {
+    if (!foodsSpicesRows || !foodsSpicesRows.length) return [];
+    return foodsSpicesRows.filter((p) => p.category === "spices");
+  }, [foodsSpicesRows]);
+
+  /** Prefer spice rows from GET /food/foods-spices so Enquiry + cart match `/home/spices` */
+  const spices = spicesFromFoodsSpicesApi.length ? spicesFromFoodsSpicesApi : spicesFallback;
 
   const foodSpotlightImages = foods.map((p) => ({
     src: p.image,

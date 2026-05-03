@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
-import { authAPI, getApiErrorMessage, getLoginFailureMessage } from "@/lib/api";
+import { authAPI, foodAPI, getApiErrorMessage, getLoginFailureMessage } from "@/lib/api";
 
 const AuthContext = createContext(null);
 
@@ -89,10 +89,20 @@ export function AuthProvider({ children }) {
     setShowAuthModal(false);
   }, []);
 
-  const logout = useCallback(() => {
-    localStorage.removeItem("yubiUser");
-    setUser(null);
-    setAddresses([]);
+  const logout = useCallback(async () => {
+    try {
+      const raw = localStorage.getItem("yubiUser");
+      const u = raw ? JSON.parse(raw) : null;
+      if (u?.token && u?.role !== "admin" && u?.role !== "delivery") {
+        await foodAPI.logout();
+      }
+    } catch {
+      /* still clear client session */
+    } finally {
+      localStorage.removeItem("yubiUser");
+      setUser(null);
+      setAddresses([]);
+    }
   }, []);
 
   function addAddress(newAddress) {

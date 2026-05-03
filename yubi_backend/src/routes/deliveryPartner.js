@@ -155,7 +155,7 @@ router.patch("/orders/:delivery_partner_id/status", async (req, res) => {
     }
 
     const [existing] = await pool.query(
-      "SELECT order_id FROM orders WHERE order_id = ? AND delivery_partner_id = ? LIMIT 1",
+      "SELECT order_id, payment_method FROM orders WHERE order_id = ? AND delivery_partner_id = ? LIMIT 1",
       [orderId, dpId]
     );
     if (!existing.length) {
@@ -166,6 +166,13 @@ router.patch("/orders/:delivery_partner_id/status", async (req, res) => {
     }
 
     if (nextStatus === "delivered") {
+      const paymentMethod = String(existing[0].payment_method || "").trim().toLowerCase();
+      if (paymentMethod === "cod" && Number(payment_received) !== 1) {
+        return res.status(400).json({
+          status: "error",
+          message: "Confirm COD payment before marking the order delivered"
+        });
+      }
       await pool.query(
         "UPDATE orders SET status = 'delivered', payment_status = IF(? = 1, 'paid', payment_status), delivered_at = NOW() WHERE order_id = ? AND delivery_partner_id = ?",
         [Number(payment_received) ? 1 : 0, orderId, dpId]

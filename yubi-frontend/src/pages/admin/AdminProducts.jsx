@@ -2,17 +2,13 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Navigate, useParams } from "react-router-dom";
 import { Eye, Pencil, Plus, Trash2 } from "lucide-react";
 import { adminAPI, getApiErrorMessage } from "../../lib/api";
+import { resolveUploadUrl } from "../../lib/foodProductUtils";
 import ProductItemForm from "../../components/admin/ProductItemForm";
 import { title } from "./AdminDashboard";
 
-const API_ASSET_BASE = (import.meta.env.VITE_BASE_URL || "").replace(/\/?api\/?$/i, "").replace(/\/$/, "");
-
 function resolveImageUrl(path) {
-  if (!path || typeof path !== "string") return "";
-  if (/^https?:\/\//i.test(path)) return path;
-  if (path.startsWith("//")) return `https:${path}`;
-  const base = API_ASSET_BASE;
-  return `${base}${path.startsWith("/") ? path : `/${path}`}`;
+  if (typeof path === "string" && path.startsWith("//")) return `https:${path}`;
+  return resolveUploadUrl(path);
 }
 
 function extractList(res) {
@@ -61,10 +57,8 @@ function normalizeAdminProduct(raw) {
 
 export default function AdminProducts() {
   const { productKind } = useParams();
-  if (productKind !== "food" && productKind !== "spices") {
-    return <Navigate to="/admin/products/food" replace />;
-  }
-  const kind = productKind;
+  const isValidKind = productKind === "food" || productKind === "spices";
+  const kind = isValidKind ? productKind : "food";
 
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -114,6 +108,10 @@ export default function AdminProducts() {
       window.alert(getApiErrorMessage(e, "Delete failed."));
     }
   };
+
+  if (!isValidKind) {
+    return <Navigate to="/admin/products/food" replace />;
+  }
 
   return (
     <div style={{ color: "#1A1A1A" }}>

@@ -1,44 +1,55 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import yubiLogo from "../../assets/yubi.png";
+import DeliveryChangePasswordModal from "../../components/delivery/DeliveryChangePasswordModal";
 import { authAPI, getApiErrorMessage, getLoginFailureMessage } from "../../lib/api";
 import { deliverySessionFromLoginResponse } from "../../utils/sessionUser";
+
+const TOAST_DURATION = 4000;
 
 export default function DeliveryLogin() {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [pwdOpen, setPwdOpen] = useState(false);
   const nav = useNavigate();
 
   const submit = async (event) => {
     event.preventDefault();
-    setError("");
     const trimmed = phone.trim().replace(/\s/g, "");
-    if (!trimmed || !password) {
-      setError("Enter mobile number and password.");
+    const passwordTrimmed = password.trim();
+    if (!trimmed || !passwordTrimmed) {
+      toast.error("Enter mobile number and password.", { duration: TOAST_DURATION });
       return;
     }
 
     setLoading(true);
     try {
-      const response = await authAPI.deliveryLogin(trimmed, password);
+      const response = await authAPI.deliveryLogin(trimmed, passwordTrimmed);
 
-      if (response?.success === false) {
-        setError(getLoginFailureMessage(response, "Invalid mobile number or password."));
+      if (response?.success === false || response?.status === "error") {
+        toast.error(getLoginFailureMessage(response, "Invalid mobile number or password."), {
+          duration: TOAST_DURATION,
+        });
         return;
       }
 
       const session = deliverySessionFromLoginResponse(response, trimmed);
       if (session) {
         localStorage.setItem("yubiUser", JSON.stringify(session));
+        const welcomeName = session.name?.trim() || "partner";
+        toast.success(`Welcome back, ${welcomeName}!`, { duration: TOAST_DURATION });
         nav("/delivery-partner/dashboard");
       } else {
-        setError(getLoginFailureMessage(response, "Invalid mobile number or password."));
+        toast.error(getLoginFailureMessage(response, "Invalid mobile number or password."), {
+          duration: TOAST_DURATION,
+        });
       }
     } catch (err) {
-      setError(
+      toast.error(
         getApiErrorMessage(err, "Login failed. Please check your credentials and try again."),
+        { duration: TOAST_DURATION },
       );
     } finally {
       setLoading(false);
@@ -86,10 +97,19 @@ export default function DeliveryLogin() {
         <button type="submit" style={button} disabled={loading}>
           {loading ? "Logging in…" : "Login to Portal"}
         </button>
-        {error ? (
-          <p style={{ color: "#D32F2F", textAlign: "center", fontWeight: 800 }}>{error}</p>
-        ) : null}
+        <button
+          type="button"
+          onClick={() => setPwdOpen(true)}
+          style={linkBtn}
+        >
+          Change password
+        </button>
       </form>
+      <DeliveryChangePasswordModal
+        open={pwdOpen}
+        onClose={() => setPwdOpen(false)}
+        defaultPhone={phone.trim().replace(/\s/g, "")}
+      />
     </div>
   );
 }
@@ -137,4 +157,15 @@ const button = {
   padding: 14,
   fontWeight: 900,
   cursor: "pointer",
+};
+const linkBtn = {
+  width: "100%",
+  marginTop: 12,
+  background: "transparent",
+  border: "none",
+  color: "#2E7D32",
+  fontWeight: 800,
+  cursor: "pointer",
+  textDecoration: "underline",
+  fontSize: 15,
 };

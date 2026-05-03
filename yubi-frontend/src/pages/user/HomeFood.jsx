@@ -1,8 +1,16 @@
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
-import { BannerSlider, CategoryImageSection, MealImageGroupsSection, ProductMarqueeSection, PopularProductsScrollSection, colors } from "./HomeSections";
+import {
+  BannerSlider,
+  CategoryImageSection,
+  MealImageGroupsSection,
+  ProductMarqueeSection,
+  PopularProductsScrollSection,
+  colors,
+} from "./HomeSections";
 import MidBannerSlider from "../../components/shared/MidBannerSlider";
-import { products } from "../../data";
+import { foodAPI, getApiErrorMessage } from "../../lib/api";
+import { extractProductList, mapFoodProductFromApi } from "../../lib/foodProductUtils";
 import { foodTextBanners } from "../../data/banners";
 import homeBanner from "../../assets/homebanner.jpg.jpeg";
 import breakfastImg from "../../assets/breakfast.jpg";
@@ -21,27 +29,92 @@ const homeShellStyle = {
   fontFamily: "'Montserrat', sans-serif",
 };
 
+const emptyHint = {
+  maxWidth: 720,
+  margin: "0 auto",
+  padding: "28px 16px",
+  textAlign: "center",
+  color: "#5C7A5C",
+  fontWeight: 700,
+};
+
 export default function HomeFood() {
   const location = useLocation();
-  const food = products.filter((p) => p.category === "food");
-  const bestSellers = [...food, ...food.slice(0, 3)];
-  const chefSpecials = [...food.slice().reverse(), ...food.slice(0, 2)];
-  const breakfast = [food[1], food[2], food[4], food[1]].filter(Boolean);
-  const lunch = [food[0], food[3], food[4], food[0]].filter(Boolean);
-  const dinner = [food[3], food[0], food[2], food[3]].filter(Boolean);
+  const [food, setFood] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const res = await foodAPI.getFoodsSpices();
+        const list = extractProductList(res)
+          .map((raw, index) => mapFoodProductFromApi(raw, index))
+          .filter((product) => product.category === "food");
+        if (!cancelled) setFood(list);
+      } catch (e) {
+        if (!cancelled) setError(getApiErrorMessage(e, "Could not load food products."));
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const n = food.length;
+
+  const bestSellers = useMemo(
+    () => (n ? [...food, ...food.slice(0, Math.min(3, n))] : []),
+    [food, n],
+  );
+  const chefSpecials = useMemo(
+    () => (n ? [...food.slice().reverse(), ...food.slice(0, Math.min(2, n))] : []),
+    [food, n],
+  );
+
+  const breakfast = useMemo(
+    () =>
+      n
+        ? [food[1 % n], food[2 % n], food[4 % n], food[1 % n]].filter(Boolean)
+        : [],
+    [food, n],
+  );
+  const lunch = useMemo(
+    () =>
+      n ? [food[0 % n], food[3 % n], food[4 % n], food[0 % n]].filter(Boolean) : [],
+    [food, n],
+  );
+  const dinner = useMemo(
+    () =>
+      n ? [food[3 % n], food[0 % n], food[2 % n], food[3 % n]].filter(Boolean) : [],
+    [food, n],
+  );
+  const snacks = useMemo(
+    () =>
+      n ? [food[2 % n], food[0 % n], food[3 % n], food[2 % n]].filter(Boolean) : [],
+    [food, n],
+  );
+
   const scrollToSection = (id) => {
     const el = document.getElementById(id);
     if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
     window.history.replaceState(null, "", `/home/food#${id}`);
   };
+
   const foodCategories = [
     { name: "Curries", route: "/home/food#curries", onClick: () => scrollToSection("curries"), image: food[0]?.image || foodBanners[0].image, imagePosition: "center 52%" },
-    { name: "Biryani", route: "/home/food#biryani", onClick: () => scrollToSection("biryani"), image: food[1]?.image || foodBanners[2].image, imagePosition: "center 58%" },
-    { name: "Snacks", route: "/home/food#snacks", onClick: () => scrollToSection("snacks"), image: food[2]?.image || foodBanners[1].image, imagePosition: "center 48%" },
+    { name: "Biryani", route: "/home/food#biryani", onClick: () => scrollToSection("biryani"), image: food[1 % Math.max(n, 1)]?.image || foodBanners[2].image, imagePosition: "center 58%" },
+    { name: "Snacks", route: "/home/food#snacks", onClick: () => scrollToSection("snacks"), image: food[2 % Math.max(n, 1)]?.image || foodBanners[1].image, imagePosition: "center 48%" },
     { name: "Breakfast", route: "/home/food#breakfast", onClick: () => scrollToSection("breakfast"), image: breakfastImg, imagePosition: "center 50%" },
     { name: "Lunch", route: "/home/food#lunch", onClick: () => scrollToSection("lunch"), image: lunchImg, imagePosition: "center 52%" },
     { name: "Dinner", route: "/home/food#dinner", onClick: () => scrollToSection("dinner"), image: dinnerImg, imagePosition: "center 50%" },
   ];
+
   const mealGroups = [
     {
       title: "Breakfast",
@@ -72,32 +145,47 @@ export default function HomeFood() {
     if (el) window.setTimeout(() => el.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
   }, [location.hash]);
 
+  const showProductBlocks = !loading && !error && n > 0;
+
   return (
     <div style={homeShellStyle}>
       <main style={{ color: colors.text, background: "transparent" }}>
         <BannerSlider items={foodBanners} />
         <CategoryImageSection title="Food Categories" items={foodCategories} titleInCard borderless />
-        <PopularProductsScrollSection title="Popular Food" items={food} />
-        <MidBannerSlider items={foodTextBanners} />
-        <div id="curries">
-          <ProductMarqueeSection title="Best Sellers" items={bestSellers} direction="left" durationSec={42} paddingTop="40px" />
-        </div>
-        <div id="biryani">
-          <ProductMarqueeSection title="Chef Specials" items={chefSpecials} direction="right" durationSec={44} paddingTop="28px" />
-        </div>
-        <MealImageGroupsSection groups={mealGroups} />
-        <div id="breakfast">
-          <ProductMarqueeSection title="Breakfast" items={breakfast} direction="left" durationSec={38} paddingTop="34px" />
-        </div>
-        <div id="lunch">
-          <ProductMarqueeSection title="Lunch" items={lunch} direction="right" durationSec={40} paddingTop="28px" />
-        </div>
-        <div id="dinner">
-          <ProductMarqueeSection title="Dinner" items={dinner} direction="left" durationSec={42} paddingTop="28px" />
-        </div>
-        <div id="snacks">
-          <ProductMarqueeSection title="Snacks" items={breakfast} direction="right" durationSec={39} paddingTop="28px" />
-        </div>
+
+        {loading ? (
+          <section style={emptyHint}>Loading food catalog…</section>
+        ) : error ? (
+          <section style={{ ...emptyHint, color: "#C62828" }}>{error}</section>
+        ) : !n ? (
+          <section style={emptyHint}>No food items are available right now.</section>
+        ) : null}
+
+        {showProductBlocks ? (
+          <>
+            <PopularProductsScrollSection title="Popular Food" items={food} />
+            <MidBannerSlider items={foodTextBanners} />
+            <div id="curries">
+              <ProductMarqueeSection title="Best Sellers" items={bestSellers} direction="left" durationSec={42} paddingTop="40px" />
+            </div>
+            <div id="biryani">
+              <ProductMarqueeSection title="Chef Specials" items={chefSpecials} direction="right" durationSec={44} paddingTop="28px" />
+            </div>
+            <MealImageGroupsSection groups={mealGroups} />
+            <div id="breakfast">
+              <ProductMarqueeSection title="Breakfast" items={breakfast} direction="left" durationSec={38} paddingTop="34px" />
+            </div>
+            <div id="lunch">
+              <ProductMarqueeSection title="Lunch" items={lunch} direction="right" durationSec={40} paddingTop="28px" />
+            </div>
+            <div id="dinner">
+              <ProductMarqueeSection title="Dinner" items={dinner} direction="left" durationSec={42} paddingTop="28px" />
+            </div>
+            <div id="snacks">
+              <ProductMarqueeSection title="Snacks" items={snacks} direction="right" durationSec={39} paddingTop="28px" />
+            </div>
+          </>
+        ) : null}
       </main>
     </div>
   );

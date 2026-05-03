@@ -1,0 +1,19 @@
+# SPA fallback for Apache (copy with `dist/` after `npm run build`).
+# Site root: RewriteBase / and rule below to /index.html
+# Subfolder (e.g. app at https://example.com/yubi/): set RewriteBase /yubi/ and use:
+#   RewriteRule . index.html [L]
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+  RewriteRule ^index\.html$ - [L]
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule . /index.html [L]
+</IfModule>
+
+# Cache hashed assets (optional)
+<IfModule mod_headers.c>
+  <FilesMatch "\.(js|css|woff2?|png|jpg|jpeg|gif|svg|webp|ico)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+</IfModule>

@@ -65,14 +65,14 @@ export default function Profile() {
         if (cancelled) return;
         if (data?.success === false) {
           const msg = getLoginFailureMessage(data, "Could not load profile.");
-          console.log("[Profile] GET food/profile error:", msg, data);
+          // console.log("[Profile] GET food/profile error:", msg, data);
           setError(msg);
           setProfile(null);
           return;
         }
-        console.log("[Profile] GET food/profile success (raw):", data);
+        // console.log("[Profile] GET food/profile success (raw):", data);
         const normalized = normalizeProfileResponse(data);
-        console.log("[Profile] GET food/profile normalized:", normalized);
+        // console.log("[Profile] GET food/profile normalized:", normalized);
         const savedEdits = readSavedProfileEdits();
         const mergedProfile = {
           ...normalized,
@@ -87,7 +87,7 @@ export default function Profile() {
       } catch (e) {
         if (!cancelled) {
           const msg = getApiErrorMessage(e, "Could not load profile.");
-          console.log("[Profile] GET food/profile error:", msg, e);
+          // console.log("[Profile] GET food/profile error:", msg, e);
           setError(msg);
           setProfile(null);
         }

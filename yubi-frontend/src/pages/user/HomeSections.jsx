@@ -11,6 +11,12 @@ import { toast } from "sonner";
 export const colors = { green: "#4CAF50", dark: "#1A2E1A", text: "#1A1A1A", border: "#D6E8D6" };
 export const fontSans = "'Montserrat', sans-serif";
 export const heading = { color: colors.dark, fontSize: 34, margin: "0 0 22px", fontWeight: 800, fontFamily: fontSans };
+
+export function responsiveHeading(width, base = heading) {
+  if (width <= 480) return { ...base, fontSize: 22, margin: "0 0 14px", lineHeight: 1.25 };
+  if (width <= 768) return { ...base, fontSize: 26, margin: "0 0 18px", lineHeight: 1.3 };
+  return base;
+}
 export const greenButton = { background: "linear-gradient(135deg, #4CAF50, #388E3C)", color: "#FFFFFF", border: "none", borderRadius: 12, padding: "10px 18px", cursor: "pointer", fontWeight: 800, boxShadow: "0 4px 14px rgba(76,175,80,0.28)", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6 };
 
 export function BannerSlider({ items = banners }) {
@@ -39,25 +45,31 @@ export function BannerSlider({ items = banners }) {
   </section>;
 }
 
-/** Same footprint as product cards (220 × min 405) for Shop By Category */
-const categoryCardShell = {
-  display: "flex",
-  flexDirection: "column",
-  alignItems: "stretch",
-  width: "220px",
-  minWidth: "220px",
-  minHeight: "405px",
-  borderRadius: "18px",
-  background: "#FFFFFF",
-  boxShadow: "0 3px 16px rgba(76, 175, 80, 0.09)",
-  border: "1.5px solid #E8F5E9",
-  cursor: "pointer",
-  padding: "0",
-  transition: "transform 0.22s ease, box-shadow 0.22s ease",
-  flexShrink: 0,
-  position: "relative",
-  overflow: "hidden",
-};
+/** Category tiles — width scales down on small screens so the marquee fits the viewport */
+function categoryCardShellForWidth(w) {
+  const cardW = w <= 400 ? 148 : w <= 520 ? 168 : w <= 768 ? 188 : 220;
+  const imgH = w <= 400 ? 220 : w <= 768 ? 260 : 318;
+  const minH = imgH + 72;
+  return {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "stretch",
+    width: `${cardW}px`,
+    minWidth: `${cardW}px`,
+    minHeight: `${minH}px`,
+    borderRadius: "18px",
+    background: "#FFFFFF",
+    boxShadow: "0 3px 16px rgba(76, 175, 80, 0.09)",
+    border: "1.5px solid #E8F5E9",
+    cursor: "pointer",
+    padding: "0",
+    transition: "transform 0.22s ease, box-shadow 0.22s ease",
+    flexShrink: 0,
+    position: "relative",
+    overflow: "hidden",
+    _imgH: imgH,
+  };
+}
 
 export function CategoryImageSection({ title = "Categories", items, titleInCard = false, titleRight, borderless = false }) {
   const { width } = useWindowSize();
@@ -69,14 +81,14 @@ export function CategoryImageSection({ title = "Categories", items, titleInCard 
     {titleInCard
       ? <div className={`category-section-title-card${borderless ? " category-section-title-card--plain" : ""}`}>
         <div className="category-section-title-copy">
-          <h2 style={{ ...heading, margin: 0 }}>{title}</h2>
+          <h2 style={{ ...responsiveHeading(width), margin: 0 }}>{title}</h2>
         </div>
         <div className="category-section-title-media">
           {titleRight}
         </div>
       </div>
-      : <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, marginBottom: 22 }}>
-        <h2 style={{ ...heading, margin: 0 }}>{title}</h2>
+      : <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, marginBottom: 22, flexWrap: "wrap" }}>
+        <h2 style={{ ...responsiveHeading(width), margin: 0 }}>{title}</h2>
         {titleRight}
       </div>}
     <div
@@ -110,6 +122,9 @@ export function CategoryImageSection({ title = "Categories", items, titleInCard 
       >
         {displayItems.map((item, index) => {
           const isH = hovered === `${item.name}-${index}`;
+          const shell = categoryCardShellForWidth(width);
+          const imgH = shell._imgH;
+          const { _imgH: _drop, ...shellStyle } = shell;
           return <Link
             key={`${item.name}-${index}`}
             to={item.route || "#"}
@@ -122,7 +137,7 @@ export function CategoryImageSection({ title = "Categories", items, titleInCard 
             onMouseEnter={() => setHovered(`${item.name}-${index}`)}
             onMouseLeave={() => setHovered(null)}
             style={{
-              ...categoryCardShell,
+              ...shellStyle,
               textDecoration: "none",
               transform: isH ? "translateY(-5px)" : "translateY(0)",
               boxShadow: isH ? "0 12px 32px rgba(76,175,80,0.16)" : "0 3px 16px rgba(76, 175, 80, 0.09)",
@@ -131,8 +146,8 @@ export function CategoryImageSection({ title = "Categories", items, titleInCard 
           >
             <div style={{
               width: "100%",
-              height: "318px",
-              minHeight: "318px",
+              height: `${imgH}px`,
+              minHeight: `${imgH}px`,
               flexShrink: 0,
               display: "flex",
               alignItems: "center",
@@ -162,15 +177,16 @@ export function CategoryImageSection({ title = "Categories", items, titleInCard 
                 }}
               />
             </div>
-            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "10px 12px 12px" }}>
+            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: width <= 520 ? "8px 8px 10px" : "10px 12px 12px" }}>
               <span style={{
-                fontSize: "15px",
+                fontSize: width <= 520 ? 13 : 15,
                 fontWeight: "800",
                 color: "#1A2E1A",
                 textAlign: "center",
                 fontFamily: fontSans,
                 letterSpacing: "0.2px",
                 lineHeight: "1.25",
+                wordBreak: "break-word",
               }}>{item.name}</span>
             </div>
           </Link>;
@@ -182,10 +198,11 @@ export function CategoryImageSection({ title = "Categories", items, titleInCard 
 
 export function MealImageGroupsSection({ groups, title = "Fresh picks & platters" }) {
   const { width } = useWindowSize();
+  const tileMin = width <= 480 ? 200 : width <= 768 ? 220 : 248;
   return (
-    <section style={{ padding: width <= 768 ? "24px 16px 0" : "32px 40px 0", maxWidth: 1280, margin: "0 auto" }}>
-      <h2 style={{ ...heading, marginBottom: 18 }}>{title}</h2>
-      <div style={{ display: "grid", gridTemplateColumns: width <= 768 ? "1fr" : "repeat(3, minmax(0, 1fr))", gap: 16 }}>
+    <section style={{ padding: width <= 768 ? "24px 16px 0" : "32px 40px 0", maxWidth: 1280, margin: "0 auto", width: "100%", boxSizing: "border-box" }}>
+      <h2 style={{ ...responsiveHeading(width), marginBottom: 18 }}>{title}</h2>
+      <div style={{ display: "grid", gridTemplateColumns: width <= 768 ? "1fr" : "repeat(3, minmax(0, 1fr))", gap: width <= 480 ? 12 : 16 }}>
         {groups.map((group) => (
           <Link
             key={group.title}
@@ -197,7 +214,7 @@ export function MealImageGroupsSection({ groups, title = "Fresh picks & platters
               }
             }}
             style={{
-              minHeight: 248,
+              minHeight: tileMin,
               borderRadius: 12,
               overflow: "hidden",
               background: "#101810",
@@ -212,7 +229,8 @@ export function MealImageGroupsSection({ groups, title = "Fresh picks & platters
               style={{
                 width: "100%",
                 height: "100%",
-                minHeight: 248,
+                minHeight: tileMin,
+                maxHeight: width <= 768 ? 320 : "none",
                 objectFit: "cover",
                 objectPosition: "center",
                 display: "block",
@@ -234,33 +252,41 @@ export function MealImageGroupsSection({ groups, title = "Fresh picks & platters
   );
 }
 
-const productCardShell = {
-  width: "220px",
-  minWidth: "220px",
-  minHeight: "405px",
-  background: "#FFFFFF",
-  borderRadius: "18px",
-  overflow: "hidden",
-  boxShadow: "0 3px 16px rgba(76, 175, 80, 0.09)",
-  border: "1.5px solid #E8F5E9",
-  cursor: "pointer",
-  transition: "transform 0.22s ease, box-shadow 0.22s ease",
-  flexShrink: 0,
-  display: "flex",
-  flexDirection: "column",
-};
+function productCardShellForWidth(w) {
+  const narrow = w <= 768;
+  return {
+    width: narrow ? "100%" : "220px",
+    minWidth: narrow ? "0" : "220px",
+    maxWidth: narrow ? "100%" : "220px",
+    minHeight: narrow ? "min-content" : "405px",
+    background: "#FFFFFF",
+    borderRadius: "18px",
+    overflow: "hidden",
+    boxShadow: "0 3px 16px rgba(76, 175, 80, 0.09)",
+    border: "1.5px solid #E8F5E9",
+    cursor: "pointer",
+    transition: "transform 0.22s ease, box-shadow 0.22s ease",
+    flexShrink: narrow ? 1 : 0,
+    display: "flex",
+    flexDirection: "column",
+    boxSizing: "border-box",
+  };
+}
 
-const productMediaWrapStyle = {
-  width: "100%",
-  height: "160px",
-  minHeight: "160px",
-  maxHeight: "160px",
-  flexShrink: 0,
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  background: "#f7fbf7",
-};
+function productMediaWrapForWidth(w) {
+  const h = w <= 480 ? 140 : w <= 768 ? 150 : 160;
+  return {
+    width: "100%",
+    height: `${h}px`,
+    minHeight: `${h}px`,
+    maxHeight: `${h}px`,
+    flexShrink: 0,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    background: "#f7fbf7",
+  };
+}
 
 const productImgStyle = {
   maxWidth: "100%",
@@ -281,6 +307,19 @@ const productBodyStyle = {
 };
 
 const SPICE_GRAM_OPTIONS = ["50g", "100g", "150g", "200g", "250g", "500g", "1kg"];
+
+function normalizeCategory(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function isSpiceCategory(value) {
+  const category = normalizeCategory(value);
+  return category === "spice" || category === "spices" || category.includes("spice");
+}
+
+function canSubmitProductEnquiryCategory(value) {
+  return isSpiceCategory(value) || normalizeCategory(value) === "grocery";
+}
 
 function defaultSpiceGrams(unit) {
   if (!unit || typeof unit !== "string") return "200g";
@@ -332,14 +371,17 @@ const addToCartBtnStyle = {
 };
 
 export function ProductCard({ product }) {
+  const { width } = useWindowSize();
+  const isMobile = width <= 768;
   const { addItem } = useCart();
   const navigate = useNavigate();
   const [showEnquiryModal, setShowEnquiryModal] = useState(false);
   const [hover, setHover] = useState(false);
-  const isSpice = product.category === "spices";
-  const isGrocery = product.category === "grocery";
+  const category = normalizeCategory(product.category);
+  const isSpice = isSpiceCategory(category);
+  const isGrocery = category === "grocery";
   const needsGrams = isSpice || isGrocery;
-  const showEnquiryAndAdd = isSpice || isGrocery;
+  const showEnquiryAndAdd = canSubmitProductEnquiryCategory(product.category);
   const rating = product.rating ?? 4.7;
   const reviewCount = product.reviews ?? 0;
   const initialGrams = useMemo(() => defaultSpiceGrams(product.unit), [product.id, product.unit]);
@@ -366,12 +408,12 @@ export function ProductCard({ product }) {
     onMouseEnter={() => setHover(true)}
     onMouseLeave={() => setHover(false)}
     style={{
-      ...productCardShell,
-      transform: hover ? "translateY(-5px)" : "translateY(0)",
+      ...productCardShellForWidth(width),
+      transform: !isMobile && hover ? "translateY(-5px)" : "translateY(0)",
       boxShadow: hover ? "0 12px 32px rgba(76,175,80,0.16)" : "0 3px 16px rgba(76, 175, 80, 0.09)",
     }}
   >
-    <div style={productMediaWrapStyle}>
+    <div style={productMediaWrapForWidth(width)}>
       <img src={product.image} alt={product.name} style={productImgStyle} />
     </div>
     <div style={productBodyStyle}>
@@ -483,11 +525,17 @@ export function ProductCard({ product }) {
             <div style={{ width: "100%", height: "1px" }} aria-hidden />
           )}
         </div>
-        <div style={{ display: "flex", gap: "8px" }}>
+        <div style={{
+          display: "flex",
+          gap: "8px",
+          flexDirection: isMobile ? "column" : "row",
+          width: "100%",
+        }}
+        >
         {showEnquiryAndAdd ? <>
-          <button type="button" onClick={(event) => { event.stopPropagation(); setShowEnquiryModal(true); }} style={{ background: "#FFFFFF", color: "#4CAF50", border: "2px solid #4CAF50", padding: "9px 8px", borderRadius: "10px", fontSize: "12px", fontWeight: "700", cursor: "pointer", flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>📩 Enquiry</button>
-          <button type="button" className="standard-add-btn" onClick={(event) => { event.stopPropagation(); pushCart(); }} style={{ ...addToCartBtnStyle, flex: 1 }}><ShoppingCart size={15} /> Add to Cart</button>
-        </> : <button type="button" className="standard-add-btn" onClick={(event) => { event.stopPropagation(); pushCart(); }} style={addToCartBtnStyle}><ShoppingCart size={15} /> Add to Cart</button>}
+          <button type="button" onClick={(event) => { event.stopPropagation(); setShowEnquiryModal(true); }} style={{ background: "#FFFFFF", color: "#4CAF50", border: "2px solid #4CAF50", padding: isMobile ? "10px 10px" : "9px 8px", borderRadius: "10px", fontSize: isMobile ? 13 : 12, fontWeight: "700", cursor: "pointer", flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", minHeight: 40 }}>📩 Enquiry</button>
+          <button type="button" className="standard-add-btn" onClick={(event) => { event.stopPropagation(); pushCart(); }} style={{ ...addToCartBtnStyle, flex: 1, minHeight: 40 }}><ShoppingCart size={15} /> Add to Cart</button>
+        </> : <button type="button" className="standard-add-btn" onClick={(event) => { event.stopPropagation(); pushCart(); }} style={{ ...addToCartBtnStyle, width: "100%" }}><ShoppingCart size={15} /> Add to Cart</button>}
         </div>
       </div>
     </div>
@@ -498,9 +546,16 @@ export function ProductCard({ product }) {
 export function ProductGridSection({ title = "Popular Products", items }) {
   const { width } = useWindowSize();
   const columns = width <= 768 ? "1fr" : width <= 1024 ? "repeat(2, minmax(0, 1fr))" : "repeat(4, minmax(0, 1fr))";
-  return <section style={{ padding: width <= 768 ? "28px 16px" : "60px 40px", maxWidth: 1280, margin: "0 auto" }}>
-    <h2 style={heading}>{title}</h2>
-    <div style={{ display: "grid", gridTemplateColumns: columns, gap: 18, alignItems: "stretch", justifyItems: "center" }}>{items.map((product) => <ProductCard key={product.id} product={product} />)}</div>
+  return <section style={{ padding: width <= 768 ? "28px 16px" : "60px 40px", maxWidth: 1280, margin: "0 auto", width: "100%", boxSizing: "border-box" }}>
+    <h2 style={responsiveHeading(width)}>{title}</h2>
+    <div style={{
+      display: "grid",
+      gridTemplateColumns: columns,
+      gap: width <= 480 ? 14 : 18,
+      alignItems: "stretch",
+      justifyItems: "stretch",
+      width: "100%",
+    }}>{items.map((product) => <ProductCard key={product.id} product={product} />)}</div>
   </section>;
 }
 
@@ -538,16 +593,18 @@ export function ProductMarqueeSection({
     <section style={{ padding: `${paddingTop} 0 0 0`, overflow: "hidden" }}>
       <div style={{ padding: titlePad, marginBottom: "28px" }}>
         <h2 style={{
-          fontSize: width <= 768 ? "1.35rem" : "2rem",
+          fontSize: width <= 480 ? "1.2rem" : width <= 768 ? "1.35rem" : "2rem",
           fontWeight: "800",
           color: "#1A2E1A",
           fontFamily: fontSans,
           marginBottom: subtitle ? "6px" : "0",
-          whiteSpace: "nowrap",
-          overflow: "hidden",
-          textOverflow: "ellipsis",
+          whiteSpace: width <= 768 ? "normal" : "nowrap",
+          overflow: width <= 768 ? "visible" : "hidden",
+          textOverflow: width <= 768 ? "clip" : "ellipsis",
+          lineHeight: 1.25,
+          wordBreak: "break-word",
         }}>{title}</h2>
-        {subtitle ? <p style={{ color: "#5C7A5C", fontSize: "15px", fontFamily: fontSans }}>{subtitle}</p> : null}
+        {subtitle ? <p style={{ color: "#5C7A5C", fontSize: width <= 480 ? 13 : 15, fontFamily: fontSans, lineHeight: 1.45 }}>{subtitle}</p> : null}
       </div>
       <div
         style={{ overflow: "hidden", width: "100%", position: "relative" }}
@@ -560,14 +617,14 @@ export function ProductMarqueeSection({
       >
         <div style={{
           position: "absolute", left: 0, top: 0, bottom: 0,
-          width: "80px",
+          width: width <= 768 ? 36 : 80,
           background: "linear-gradient(to right, rgba(254,238,191,0.9), transparent)",
           zIndex: 2,
           pointerEvents: "none",
         }} />
         <div style={{
           position: "absolute", right: 0, top: 0, bottom: 0,
-          width: "80px",
+          width: width <= 768 ? 36 : 80,
           background: "linear-gradient(to left, rgba(254,238,191,0.9), transparent)",
           zIndex: 2,
           pointerEvents: "none",
@@ -577,15 +634,21 @@ export function ProductMarqueeSection({
           style={{
             display: "flex",
             flexDirection: "row",
-            gap: "20px",
-            padding: "12px 20px 20px 20px",
+            gap: width <= 768 ? 12 : 20,
+            padding: width <= 768 ? "10px 12px 16px 12px" : "12px 20px 20px 20px",
             width: "max-content",
             animation,
             willChange: "transform",
           }}
         >
           {doubledProducts.map((product, index) => (
-            <div key={`${product.id}-${index}`} style={{ flexShrink: 0 }}>
+            <div
+              key={`${product.id}-${index}`}
+              style={{
+                flexShrink: 0,
+                width: width <= 768 ? Math.min(280, Math.max(240, width - 56)) : 220,
+              }}
+            >
               <ProductCard product={product} />
             </div>
           ))}
@@ -618,8 +681,8 @@ export function PopularProductsScrollSection({
 export function ManualProductsRowSection({ title, subtitle, items }) {
   const { width } = useWindowSize();
   return (
-    <section style={{ padding: width <= 768 ? "32px 16px 0" : "40px 40px 0", maxWidth: 1280, margin: "0 auto" }}>
-      <h2 style={{ ...heading, marginBottom: subtitle ? 8 : 18 }}>{title}</h2>
+    <section style={{ padding: width <= 768 ? "32px 16px 0" : "40px 40px 0", maxWidth: 1280, margin: "0 auto", width: "100%", boxSizing: "border-box" }}>
+      <h2 style={{ ...responsiveHeading(width), marginBottom: subtitle ? 8 : 18 }}>{title}</h2>
       {subtitle ? <p style={{ color: "#5C7A5C", fontSize: "15px", fontFamily: fontSans, marginBottom: 18 }}>{subtitle}</p> : null}
       <div
         className="manual-product-row-scroll"
@@ -634,7 +697,13 @@ export function ManualProductsRowSection({ title, subtitle, items }) {
         }}
       >
         {items.map((product) => (
-          <div key={product.id} style={{ flexShrink: 0 }}>
+          <div
+            key={product.id}
+            style={{
+              flexShrink: 0,
+              width: width <= 768 ? Math.min(280, Math.max(240, width - 56)) : 220,
+            }}
+          >
             <ProductCard product={product} />
           </div>
         ))}
@@ -645,8 +714,14 @@ export function ManualProductsRowSection({ title, subtitle, items }) {
 
 export function SpotlightImageStrip({ title, subtitle, images }) {
   const { width } = useWindowSize();
-  const gap = 16;
-  const cardOuterW = width <= 520 ? Math.min(310, Math.max(220, width - 96)) : 335;
+  const gap = width <= 480 ? 12 : 16;
+  const compact = width <= 768;
+  /** Full-width cards on compact layouts so Fresh picks / Spice highlights aren’t clipped */
+  const cardOuterW = compact
+    ? Math.min(360, Math.max(240, width - 32))
+    : width <= 1100
+      ? Math.min(310, Math.max(260, width - 200))
+      : 335;
   const step = cardOuterW + gap;
   const visible = width <= 700 ? 1 : width <= 1100 ? 2 : 3;
   const maxIndex = Math.max(0, images.length - visible);
@@ -662,8 +737,8 @@ export function SpotlightImageStrip({ title, subtitle, images }) {
 
   const arrowBtn = {
     flexShrink: 0,
-    width: 40,
-    height: 40,
+    width: compact ? 44 : 40,
+    height: compact ? 44 : 40,
     borderRadius: "50%",
     border: "1.5px solid #C8E6C9",
     background: "#FFFFFF",
@@ -678,94 +753,151 @@ export function SpotlightImageStrip({ title, subtitle, images }) {
     padding: 0,
   };
 
+  const imgBoxH = compact ? (width <= 400 ? 160 : 172) : 195;
+
+  const carousel = (
+    <div style={{ flex: 1, minWidth: 0, overflow: "hidden", padding: "4px 0 8px 0", width: "100%" }}>
+      <div style={{
+        display: "flex",
+        gap,
+        transform: `translateX(-${displayIndex * step}px)`,
+        transition: "transform 0.35s ease",
+        willChange: "transform",
+      }}>
+        {images.map((img, index) => (
+          <Link
+            key={`${img.src}-${index}`}
+            to={img.to || "#"}
+            style={{
+              flexShrink: 0,
+              textDecoration: "none",
+              width: cardOuterW,
+              minWidth: cardOuterW,
+              maxWidth: "100%",
+            }}
+          >
+            <div style={{
+              width: "100%",
+              height: `${imgBoxH}px`,
+              minHeight: `${imgBoxH}px`,
+              borderRadius: "16px",
+              overflow: "hidden",
+              border: "1.5px solid #E8F5E9",
+              boxShadow: "0 4px 18px rgba(76, 175, 80, 0.12)",
+              background: "#f7fbf7",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}>
+              <img
+                src={img.src}
+                alt={img.alt || ""}
+                style={{
+                  maxWidth: "100%",
+                  maxHeight: "100%",
+                  width: "auto",
+                  height: "auto",
+                  objectFit: "contain",
+                  objectPosition: "center",
+                  display: "block",
+                }}
+              />
+            </div>
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+
   return (
-    <section style={{ padding: width <= 768 ? "24px 16px 0" : "28px 40px 0", maxWidth: 1280, margin: "0 auto" }}>
+    <section style={{
+      padding: width <= 768 ? "24px 16px 0" : "28px 40px 0",
+      maxWidth: 1280,
+      margin: "0 auto",
+      width: "100%",
+      boxSizing: "border-box",
+    }}
+    >
       <h2 style={{
-        ...heading,
+        ...responsiveHeading(width),
         marginBottom: subtitle ? 8 : 16,
-        fontSize: width <= 768 ? 22 : 28,
-        whiteSpace: "nowrap",
-        overflow: "hidden",
-        textOverflow: "ellipsis",
+        whiteSpace: compact ? "normal" : "nowrap",
+        overflow: compact ? "visible" : "hidden",
+        textOverflow: compact ? "clip" : "ellipsis",
+        wordBreak: "break-word",
       }}>{title}</h2>
-      {subtitle ? <p style={{ color: "#5C7A5C", fontSize: "14px", fontFamily: fontSans, marginBottom: 16 }}>{subtitle}</p> : null}
-      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        <button
-          type="button"
-          aria-label="Previous spotlight images"
-          onClick={prev}
-          disabled={displayIndex <= 0}
-          style={{
-            ...arrowBtn,
-            opacity: displayIndex <= 0 ? 0.35 : 1,
-            cursor: displayIndex <= 0 ? "not-allowed" : "pointer",
-          }}
-        >
-          ‹
-        </button>
-        <div style={{ flex: 1, minWidth: 0, overflow: "hidden", padding: "4px 0 16px 0" }}>
+      {subtitle ? <p style={{ color: "#5C7A5C", fontSize: width <= 480 ? 13 : 14, fontFamily: fontSans, marginBottom: 16, lineHeight: 1.45 }}>{subtitle}</p> : null}
+      {compact ? (
+        <>
+          {carousel}
           <div style={{
             display: "flex",
-            gap,
-            transform: `translateX(-${displayIndex * step}px)`,
-            transition: "transform 0.35s ease",
-            willChange: "transform",
-          }}>
-            {images.map((img, index) => (
-              <Link
-                key={`${img.src}-${index}`}
-                to={img.to || "#"}
-                style={{
-                  flexShrink: 0,
-                  textDecoration: "none",
-                  width: cardOuterW,
-                  minWidth: cardOuterW,
-                }}
-              >
-                <div style={{
-                  width: "100%",
-                  height: "195px",
-                  borderRadius: "16px",
-                  overflow: "hidden",
-                  border: "1.5px solid #E8F5E9",
-                  boxShadow: "0 4px 18px rgba(76, 175, 80, 0.12)",
-                  background: "#f7fbf7",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}>
-                  <img
-                    src={img.src}
-                    alt={img.alt || ""}
-                    style={{
-                      maxWidth: "100%",
-                      maxHeight: "100%",
-                      width: "auto",
-                      height: "auto",
-                      objectFit: "contain",
-                      objectPosition: "center",
-                      display: "block",
-                    }}
-                  />
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-        <button
-          type="button"
-          aria-label="Next spotlight images"
-          onClick={next}
-          disabled={displayIndex >= maxIndex}
-          style={{
-            ...arrowBtn,
-            opacity: displayIndex >= maxIndex ? 0.35 : 1,
-            cursor: displayIndex >= maxIndex ? "not-allowed" : "pointer",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 20,
+            marginTop: 8,
+            paddingBottom: 8,
           }}
-        >
-          ›
-        </button>
-      </div>
+          >
+            <button
+              type="button"
+              aria-label="Previous spotlight images"
+              onClick={prev}
+              disabled={displayIndex <= 0}
+              style={{
+                ...arrowBtn,
+                opacity: displayIndex <= 0 ? 0.35 : 1,
+                cursor: displayIndex <= 0 ? "not-allowed" : "pointer",
+              }}
+            >
+              ‹
+            </button>
+            <button
+              type="button"
+              aria-label="Next spotlight images"
+              onClick={next}
+              disabled={displayIndex >= maxIndex}
+              style={{
+                ...arrowBtn,
+                opacity: displayIndex >= maxIndex ? 0.35 : 1,
+                cursor: displayIndex >= maxIndex ? "not-allowed" : "pointer",
+              }}
+            >
+              ›
+            </button>
+          </div>
+        </>
+      ) : (
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <button
+            type="button"
+            aria-label="Previous spotlight images"
+            onClick={prev}
+            disabled={displayIndex <= 0}
+            style={{
+              ...arrowBtn,
+              opacity: displayIndex <= 0 ? 0.35 : 1,
+              cursor: displayIndex <= 0 ? "not-allowed" : "pointer",
+            }}
+          >
+            ‹
+          </button>
+          {carousel}
+          <button
+            type="button"
+            aria-label="Next spotlight images"
+            onClick={next}
+            disabled={displayIndex >= maxIndex}
+            style={{
+              ...arrowBtn,
+              opacity: displayIndex >= maxIndex ? 0.35 : 1,
+              cursor: displayIndex >= maxIndex ? "not-allowed" : "pointer",
+            }}
+          >
+            ›
+          </button>
+        </div>
+      )}
     </section>
   );
 }
@@ -792,6 +924,12 @@ function EnquiryModal({ product, onClose }) {
   };
 
   const submit = async () => {
+    if (!canSubmitProductEnquiryCategory(product.category)) {
+      toast.error("Enquiry is available only for spices and grocery products.");
+      resetAndClose();
+      return;
+    }
+
     const nextErrors = {};
     ["name", "email", "phone", "address", "quantity"].forEach((field) => {
       if (!String(enquiryForm[field] ?? "").trim()) nextErrors[field] = "This field is required";
@@ -894,7 +1032,7 @@ export function AutoScrollProducts({ items }) {
 
 export function GallerySection({ items = products.slice(0, 6) }) {
   const { width } = useWindowSize();
-  return <section style={{ padding: width <= 768 ? "28px 16px" : "60px 40px", maxWidth: 1280, margin: "0 auto" }}><h2 style={heading}>Gallery</h2><div style={{ display: "grid", gridTemplateColumns: width <= 768 ? "repeat(2,1fr)" : "repeat(3,1fr)", gap: 12 }}>{items.slice(0, 6).map((product) => <img key={product.id} src={product.image} alt={product.name} style={{ width: "100%", aspectRatio: "4/3", objectFit: "cover", borderRadius: 10 }} />)}</div></section>;
+  return <section style={{ padding: width <= 768 ? "28px 16px" : "60px 40px", maxWidth: 1280, margin: "0 auto", width: "100%", boxSizing: "border-box" }}><h2 style={responsiveHeading(width)}>Gallery</h2><div style={{ display: "grid", gridTemplateColumns: width <= 480 ? "1fr" : width <= 768 ? "repeat(2,1fr)" : "repeat(3,1fr)", gap: 12 }}>{items.slice(0, 6).map((product) => <img key={product.id} src={product.image} alt={product.name} style={{ width: "100%", aspectRatio: "4/3", objectFit: "cover", borderRadius: 10 }} />)}</div></section>;
 }
 
 export function buildCategoryItems(list, route = "#") {

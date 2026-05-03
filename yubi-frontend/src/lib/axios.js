@@ -1,7 +1,22 @@
 import axios from 'axios';
 
 /** Production API when env is not set at build time */
-const PRODUCTION_FALLBACK = 'https://www.yubi.co.in/api/';
+export const PRODUCTION_API_BASE_URL = 'https://www.yubi.co.in/api/';
+
+function normalizeApiBaseUrl(url) {
+  if (url == null || typeof url !== 'string') return '/api/';
+  const t = url.trim();
+  if (!t) return '/api/';
+  return t.endsWith('/') ? t : `${t}/`;
+}
+
+/** Client route path for full-page redirects (matches `BrowserRouter` basename from Vite `base`). */
+function appNavigatePath(route) {
+  const base = import.meta.env.BASE_URL || '/';
+  const r = String(route || '').replace(/^\//, '');
+  const prefix = base.endsWith('/') ? base : `${base}/`;
+  return `${prefix}${r}`;
+}
 
 /**
  * Dev: use same-origin `/api/` + Vite proxy → http://localhost:4000 (avoids CORS).
@@ -9,13 +24,17 @@ const PRODUCTION_FALLBACK = 'https://www.yubi.co.in/api/';
  *
  * Override dev URL: `VITE_DEV_API_URL=http://localhost:4000/api/` (direct, needs backend CORS).
  */
-const BASE_URL = import.meta.env.PROD
-  ? import.meta.env.VITE_BASE_URL || PRODUCTION_FALLBACK
-  : import.meta.env.VITE_DEV_API_URL || '/api/';
+const LOCAL_BASE_URL = import.meta.env.DEV
+  ? import.meta.env.VITE_LOCAL_BASE_URL || import.meta.env.VITE_DEV_API_URL || '/api/'
+  : '';
+
+export const API_BASE_URL = normalizeApiBaseUrl(
+  LOCAL_BASE_URL || import.meta.env.VITE_BASE_URL || PRODUCTION_API_BASE_URL,
+);
 
 // Create axios instance with base configuration
 const axiosInstance = axios.create({
-  baseURL: BASE_URL,
+  baseURL: API_BASE_URL,
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
@@ -64,17 +83,17 @@ axiosInstance.interceptors.response.use(
           try {
             const user = JSON.parse(yubiUser);
             if (user.role === 'admin') {
-              window.location.href = '/admin';
+              window.location.href = appNavigatePath('/admin');
             } else if (user.role === 'delivery') {
-              window.location.href = '/delivery-partner';
+              window.location.href = appNavigatePath('/delivery-partner');
             } else {
-              window.location.href = '/auth';
+              window.location.href = appNavigatePath('/auth');
             }
           } catch (e) {
-            window.location.href = '/auth';
+            window.location.href = appNavigatePath('/auth');
           }
         } else {
-          window.location.href = '/auth';
+          window.location.href = appNavigatePath('/auth');
         }
       }
     }

@@ -29,6 +29,20 @@ function normalizePartner(p) {
   };
 }
 
+function formatPartnerStatus(status) {
+  const value = String(status ?? "").trim();
+  if (!value || value === "â€”") return "â€”";
+  return value
+    .replace(/[_-]+/g, " ")
+    .toLowerCase()
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function isPartnerAvailable(partner) {
+  const status = String(partner.status ?? "").trim().toLowerCase();
+  return partner.is_active === 1 || status === "available";
+}
+
 export default function AdminPartners() {
   const [partners, setPartners] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -122,11 +136,11 @@ export default function AdminPartners() {
                   <dt style={{ fontWeight: 800, color: "#6B7280", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.04em" }}>
                     Status
                   </dt>
-                  <dd style={{ margin: "4px 0 0" }}>{p.status}</dd>
+                  <dd style={{ margin: "4px 0 0" }}>{formatPartnerStatus(p.status)}</dd>
                 </div>
               </dl>
               <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px solid #E8F5E9" }}>
-                <AvailabilityPill active={p.is_active === 1} />
+                <AvailabilityPill active={isPartnerAvailable(p)} />
               </div>
             </article>
           ))}

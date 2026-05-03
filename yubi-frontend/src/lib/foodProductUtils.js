@@ -1,6 +1,5 @@
 /** Same production API base as axios (for building absolute /uploads URLs in prod). */
-const PRODUCTION_API_BASE =
-  import.meta.env.VITE_BASE_URL || "https://www.yubi.co.in/api/";
+import { API_BASE_URL } from "./axios";
 
 /**
  * Turn API image paths into a browser-loadable URL.
@@ -13,8 +12,7 @@ export function resolveUploadUrl(pathOrUrl) {
   const path = s.startsWith("/") ? s : `/${s}`;
   if (import.meta.env.DEV) return path;
   try {
-    const base = PRODUCTION_API_BASE.endsWith("/") ? PRODUCTION_API_BASE : `${PRODUCTION_API_BASE}/`;
-    const origin = new URL(base).origin;
+    const origin = new URL(API_BASE_URL, window.location.origin).origin;
     return `${origin}${path}`;
   } catch {
     return path;

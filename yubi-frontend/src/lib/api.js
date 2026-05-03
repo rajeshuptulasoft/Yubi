@@ -7,6 +7,9 @@ export function getApiErrorMessage(err, fallback = 'Something went wrong. Please
   if (typeof err === 'object' && err.success === false && typeof err.message === 'string' && err.message.trim()) {
     return err.message.trim();
   }
+  if (typeof err === 'object' && err.status === 'error' && typeof err.message === 'string' && err.message.trim()) {
+    return err.message.trim();
+  }
   if (typeof err.message === 'string' && err.message) return err.message;
   if (typeof err.error === 'string') return err.error;
   if (err.error?.message) return err.error.message;
@@ -20,6 +23,9 @@ export function getApiErrorMessage(err, fallback = 'Something went wrong. Please
 export function getLoginFailureMessage(payload, fallback = 'Login failed. Please try again.') {
   if (!payload || typeof payload !== 'object') return fallback;
   if (payload.success === false && typeof payload.message === 'string' && payload.message.trim()) {
+    return payload.message.trim();
+  }
+  if (payload.status === 'error' && typeof payload.message === 'string' && payload.message.trim()) {
     return payload.message.trim();
   }
   return getApiErrorMessage(payload, fallback);
@@ -105,6 +111,9 @@ export const foodAPI = {
    * { order_id, cancel_code, reason, review? }
    */
   cancelOrder: (payload) => apiPost("/food/cancel-order", payload),
+
+  /** POST /food/logout — clears refresh cookie / session on server */
+  logout: () => apiPost("/food/logout", {}, { withCredentials: true }),
 };
 
 // ============ PRODUCTS API ============
@@ -176,8 +185,11 @@ export const authAPI = {
   adminLogin: (phoneOrEmail, password) =>
     apiPost('/admin/login', { phone_or_email: phoneOrEmail, password }),
   
-  /** POST /delivery/login — body: { phone, password } (mobile + password) */
-  deliveryLogin: (phone, password) => apiPost("/delivery/login", { phone, password }),
+  /**
+   * POST /delivery-partner/login — JSON { phone, password } (uses axios base URL, Content-Type: application/json).
+   */
+  deliveryLogin: (phone, password) =>
+    apiPost('/delivery-partner/login', { phone: String(phone ?? ''), password: String(password ?? '') }),
   
   /** POST /food/register — body: name, email, password, confirm_password, phone */
   register: (userData) => apiPost('/food/register', userData),
@@ -210,6 +222,48 @@ export const authAPI = {
   
   // Refresh token
   refreshToken: () => apiPost('/auth/refresh', {}),
+};
+
+// ============ DELIVERY PARTNER (portal) API ============
+/** Base path `/delivery-partner/*` — query params as required by backend. */
+export const deliveryPartnerAPI = {
+  /** GET — query: `phone` and/or `user_id` */
+  getProfile: (params = {}) =>
+    apiGet("/delivery-partner/profile", {
+      params: {
+        ...(params.phone != null && String(params.phone).trim() !== ""
+          ? { phone: String(params.phone).trim() }
+          : {}),
+        ...(params.user_id != null && params.user_id !== ""
+          ? { user_id: params.user_id }
+          : {}),
+      },
+    }),
+
+  /** GET — query: `delivery_partner_id` (required) */
+  getOrderHistory: (deliveryPartnerId) =>
+    apiGet("/delivery-partner/order-history", {
+      params: { delivery_partner_id: deliveryPartnerId },
+    }),
+
+  /** GET — query: `delivery_partner_id` (required) */
+  getActiveOrders: (deliveryPartnerId) =>
+    apiGet("/delivery-partner/get-active-order", {
+      params: { delivery_partner_id: deliveryPartnerId },
+    }),
+
+  /**
+   * PATCH — body: `{ order_id, action }` where action is accepted|picked|out_for_delivery|delivered
+   * or aliases accept|pickup|out|deliver. Optional `payment_received` (1) when marking delivered + COD.
+   */
+  patchOrderStatus: (deliveryPartnerId, payload) =>
+    apiPatch(`/delivery-partner/orders/${deliveryPartnerId}/status`, payload),
+
+  /** POST — body `{ delivery_partner_id, available }` where `available` is 1 (online) or 0 (offline) */
+  updateAvailability: (payload) => apiPost("/delivery-partner/update-availability", payload),
+
+  /** POST — body `{ phone, current_password, new_password }` (optional `user_id`) */
+  changePassword: (payload) => apiPost("/delivery-partner/change-password", payload),
 };
 
 // ============ ADMIN API ============
