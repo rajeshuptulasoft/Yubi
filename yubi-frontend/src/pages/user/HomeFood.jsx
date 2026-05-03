@@ -10,17 +10,24 @@ import {
 } from "./HomeSections";
 import MidBannerSlider from "../../components/shared/MidBannerSlider";
 import { foodAPI, getApiErrorMessage } from "../../lib/api";
+import {
+  buildFoodPageCategoryItems,
+  filterCategoryNamesForFood,
+} from "../../lib/foodCategoriesUi";
 import { extractProductList, mapFoodProductFromApi } from "../../lib/foodProductUtils";
+import { useFoodCategories } from "../../hooks/useFoodCategories";
 import { foodTextBanners } from "../../data/banners";
 import homeBanner from "../../assets/homebanner.jpg.jpeg";
+import foodBanner from "../../assets/food  banner.jpg";
+import foodBanner2 from "../../assets/food banner 2.jpg";
 import breakfastImg from "../../assets/breakfast.jpg";
 import lunchImg from "../../assets/Lunch.jpg";
 import dinnerImg from "../../assets/Dinner 2.jpg";
 
 const foodBanners = [
   { id: 1, headline: "Fresh Food Delivered Hot", subheadline: "Kitchen-fresh meals at your door", cta: "Order Food", route: "/menu", image: homeBanner },
-  { id: 2, headline: "Chef Crafted Daily", subheadline: "Comfort dishes, snacks and sweets", cta: "See Menu", route: "/menu", image: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=1600&auto=format&fit=crop" },
-  { id: 3, headline: "Lunch Sorted Fast", subheadline: "Quick delivery for busy days", cta: "Order Now", route: "/menu", image: "https://images.unsplash.com/photo-1543353071-873f17a7a088?w=1600&auto=format&fit=crop" },
+  { id: 2, headline: "Chef Crafted Daily", subheadline: "Comfort dishes, snacks and sweets", cta: "See Menu", route: "/menu", image: foodBanner },
+  { id: 3, headline: "Lunch Sorted Fast", subheadline: "Quick delivery for busy days", cta: "Order Now", route: "/menu", image: foodBanner2 },
 ];
 
 const homeShellStyle = {
@@ -38,8 +45,18 @@ const emptyHint = {
   fontWeight: 700,
 };
 
+const defaultFoodCategoryCards = (food, n, foodBanners, scrollToSection, breakfastImg, lunchImg, dinnerImg) => [
+  { name: "Curries", route: "/home/food#curries", onClick: () => scrollToSection("curries"), image: food[0]?.image || foodBanners[0].image, imagePosition: "center 52%" },
+  { name: "Biryani", route: "/home/food#biryani", onClick: () => scrollToSection("biryani"), image: food[1 % Math.max(n, 1)]?.image || foodBanners[2].image, imagePosition: "center 58%" },
+  { name: "Snacks", route: "/home/food#snacks", onClick: () => scrollToSection("snacks"), image: food[2 % Math.max(n, 1)]?.image || foodBanners[1].image, imagePosition: "center 48%" },
+  { name: "Breakfast", route: "/home/food#breakfast", onClick: () => scrollToSection("breakfast"), image: breakfastImg, imagePosition: "center 50%" },
+  { name: "Lunch", route: "/home/food#lunch", onClick: () => scrollToSection("lunch"), image: lunchImg, imagePosition: "center 52%" },
+  { name: "Dinner", route: "/home/food#dinner", onClick: () => scrollToSection("dinner"), image: dinnerImg, imagePosition: "center 50%" },
+];
+
 export default function HomeFood() {
   const location = useLocation();
+  const { names: categoryNames } = useFoodCategories();
   const [food, setFood] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -50,7 +67,8 @@ export default function HomeFood() {
       try {
         setLoading(true);
         setError(null);
-        const res = await foodAPI.getFoodsSpices();
+        /** GET /food/products?category=Foods — DB category label "Foods" */
+        const res = await foodAPI.getProducts({ category: "Foods" });
         const list = extractProductList(res)
           .map((raw, index) => mapFoodProductFromApi(raw, index))
           .filter((product) => product.category === "food");
@@ -106,14 +124,16 @@ export default function HomeFood() {
     window.history.replaceState(null, "", `/home/food#${id}`);
   };
 
-  const foodCategories = [
-    { name: "Curries", route: "/home/food#curries", onClick: () => scrollToSection("curries"), image: food[0]?.image || foodBanners[0].image, imagePosition: "center 52%" },
-    { name: "Biryani", route: "/home/food#biryani", onClick: () => scrollToSection("biryani"), image: food[1 % Math.max(n, 1)]?.image || foodBanners[2].image, imagePosition: "center 58%" },
-    { name: "Snacks", route: "/home/food#snacks", onClick: () => scrollToSection("snacks"), image: food[2 % Math.max(n, 1)]?.image || foodBanners[1].image, imagePosition: "center 48%" },
-    { name: "Breakfast", route: "/home/food#breakfast", onClick: () => scrollToSection("breakfast"), image: breakfastImg, imagePosition: "center 50%" },
-    { name: "Lunch", route: "/home/food#lunch", onClick: () => scrollToSection("lunch"), image: lunchImg, imagePosition: "center 52%" },
-    { name: "Dinner", route: "/home/food#dinner", onClick: () => scrollToSection("dinner"), image: dinnerImg, imagePosition: "center 50%" },
-  ];
+  const mealImages = { breakfast: breakfastImg, lunch: lunchImg, dinner: dinnerImg };
+
+  const foodCategories =
+    categoryNames && categoryNames.length
+      ? buildFoodPageCategoryItems(filterCategoryNamesForFood(categoryNames), {
+          products: food,
+          scrollToSection,
+          mealImages,
+        })
+      : defaultFoodCategoryCards(food, n, foodBanners, scrollToSection, breakfastImg, lunchImg, dinnerImg);
 
   const mealGroups = [
     {

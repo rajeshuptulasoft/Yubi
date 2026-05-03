@@ -12,7 +12,9 @@ import MidBannerSlider from "../../components/shared/MidBannerSlider";
 import { products as staticProducts, banners } from "../../data";
 import { homeGroceryBanners, midSpiceBanners, tasteTheFreshnessMidBanner } from "../../data/banners";
 import { foodAPI } from "../../lib/api";
+import { buildHomeShopCategoryItems } from "../../lib/foodCategoriesUi";
 import { extractProductList, mapFoodProductFromApi } from "../../lib/foodProductUtils";
+import { useFoodCategories } from "../../hooks/useFoodCategories";
 import breakfastImg from "../../assets/breakfast.jpg";
 import lunchImg from "../../assets/Lunch.jpg";
 import dinnerImg from "../../assets/Dinner 2.jpg";
@@ -32,11 +34,12 @@ const homeShellStyle = {
 };
 
 export default function HomeCombined() {
+  const { names: categoryNames } = useFoodCategories();
+
   /** GET /food/products — public; mapped rows replace static catalog for all product-driven sections when non-empty. */
   const [apiProducts, setApiProducts] = useState(null);
   /**
-   * GET /food/foods-spices (public). Only rows that normalize to `category === "spices"` power spice carousels;
-   * ProductCard then shows Enquiry + Add to cart like `/home/spices`.
+   * GET /food/foods-spices — spice + grocery products; only `spices` rows power spice carousels.
    */
   const [foodsSpicesRows, setFoodsSpicesRows] = useState(null);
 
@@ -44,27 +47,22 @@ export default function HomeCombined() {
     let cancelled = false;
     (async () => {
       try {
-        const res = await foodAPI.getProducts();
-        let list = extractProductList(res).map(mapFoodProductFromApi);
-        /** Merge Food + Grocery category fetches so Popular Products includes both when the API supports `category` query params. */
-        try {
-          const [rFood, rGrocery] = await Promise.all([
-            foodAPI.getProducts({ category: "Food" }),
-            foodAPI.getProducts({ category: "Grocery" }),
-          ]);
-          const byId = new Map(list.map((p) => [p.id, p]));
-          let i = list.length;
-          for (const raw of [
-            ...extractProductList(rFood),
-            ...extractProductList(rGrocery),
-          ]) {
-            const p = mapFoodProductFromApi(raw, i++);
-            if (!byId.has(p.id)) byId.set(p.id, p);
-          }
-          list = Array.from(byId.values());
-        } catch {
-          /* keep unfiltered list */
+        /** Food rows from GET /food/products?category=Foods; grocery from GET /food/foods-spices (category Grocery). */
+        const [rFoods, rFs] = await Promise.all([
+          foodAPI.getProducts({ category: "Foods" }),
+          foodAPI.getFoodsSpices(),
+        ]);
+        let i = 0;
+        const byId = new Map();
+        for (const raw of extractProductList(rFoods)) {
+          const p = mapFoodProductFromApi(raw, i++);
+          if (p.category === "food") byId.set(p.id, p);
         }
+        for (const raw of extractProductList(rFs)) {
+          const p = mapFoodProductFromApi(raw, i++);
+          if (p.category === "grocery" && !byId.has(p.id)) byId.set(p.id, p);
+        }
+        const list = Array.from(byId.values());
         if (!cancelled) setApiProducts(list.length ? list : null);
       } catch {
         if (!cancelled) setApiProducts(null);
@@ -113,11 +111,19 @@ export default function HomeCombined() {
 
   const spicesFromFoodsSpicesApi = useMemo(() => {
     if (!foodsSpicesRows || !foodsSpicesRows.length) return [];
-    return foodsSpicesRows.filter((p) => p.category === "spices");
+    const onlySpices = foodsSpicesRows.filter((p) => p.category === "spices");
+    if (onlySpices.length) return onlySpices;
+    /** Same catalog as `/home/spices` when API labels masalas as Grocery, etc. */
+    return foodsSpicesRows;
   }, [foodsSpicesRows]);
 
   /** Prefer spice rows from GET /food/foods-spices so Enquiry + cart match `/home/spices` */
   const spices = spicesFromFoodsSpicesApi.length ? spicesFromFoodsSpicesApi : spicesFallback;
+
+  const shopByCategoryItems = useMemo(
+    () => (categoryNames && categoryNames.length ? buildHomeShopCategoryItems(categoryNames) : homeCategories),
+    [categoryNames],
+  );
 
   const foodSpotlightImages = foods.map((p) => ({
     src: p.image,
@@ -154,7 +160,7 @@ export default function HomeCombined() {
     <div style={homeShellStyle}>
       <main style={{ color: colors.text, background: "transparent" }}>
         <BannerSlider items={banners} />
-        <CategoryImageSection title="Shop By Category" items={homeCategories} />
+        <CategoryImageSection title="Shop By Category" items={shopByCategoryItems} />
         <PopularProductsScrollSection title="Popular Products" items={popularItems} durationSec={52} />
         <section aria-label="Taste the Freshness" style={{ paddingTop: 8 }}>
           <MidBannerSlider items={tasteTheFreshnessMidBanner} />

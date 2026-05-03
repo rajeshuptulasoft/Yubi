@@ -55,15 +55,15 @@ router.get("/products", async (req, res) => {
   }
 });
 
-//get all foods and spices
+//get all spices and grocery products
 router.get("/foods-spices", async (_req, res) => {
   const [rows] = await pool.query(
     `SELECT product_id, product_name, description, category, price, image_url, is_available
      FROM products
      WHERE is_available = 1
        AND (
-         LOWER(category) LIKE '%food%'
-         OR LOWER(category) LIKE '%spice%'
+         LOWER(category) LIKE '%spice%'
+         OR LOWER(category) LIKE '%grocery%'
        )
      ORDER BY product_id DESC`
   );

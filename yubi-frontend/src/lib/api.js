@@ -53,12 +53,15 @@ export const ordersAPI = {
 };
 
 // ============ FOOD (PUBLIC) API ============
-/** `getProducts` is public. `getFoodsSpices` sends Bearer token via axios when `yubiUser` is in localStorage. */
+/** Food routes use `API_BASE_URL` (dev `/api/` proxy, prod absolute URL). Token sent only when logged in. */
 export const foodAPI = {
-  /** GET /food/products */
+  /** GET /food/products — optional `params.category` (e.g. `Foods`) */
   getProducts: (params = {}) => apiGet("/food/products", { params }),
 
-  /** GET /food/foods-spices — authenticated (Authorization added by axios interceptor). */
+  /** GET /food/categories — category names for Shop By Category cards */
+  getCategories: () => apiGet("/food/categories"),
+
+  /** GET /food/foods-spices — spice + grocery catalog (same origin in dev/prod) */
   getFoodsSpices: (params = {}) => apiGet("/food/foods-spices", { params }),
 
   /** GET /food/agro-products — public */

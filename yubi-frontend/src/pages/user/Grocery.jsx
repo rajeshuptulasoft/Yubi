@@ -24,7 +24,7 @@ const emptyStateStyle = {
 function productLabel(product) {
   if (product.category === "agro") return "Agro Products";
   if (product.category === "spices") return "Spices";
-  if (product.category === "food") return "Food";
+  if (product.category === "grocery") return "Grocery";
   return product.category ? product.category[0].toUpperCase() + product.category.slice(1) : "Products";
 }
 
@@ -45,18 +45,21 @@ export default function Grocery() {
           foodAPI.getFoodsSpices(),
           foodAPI.getAgroProducts(),
         ]);
-        /**
-         * GET /food/foods-spices — backend returns both food and spice rows; show all of them here.
-         * (Filtering to only `spices` hid every `food` row and emptied the page when the DB had no "spice" label.)
-         */
-        const foodsAndSpices = extractProductList(foodsSpicesRes).map((raw, index) =>
-          mapFoodProductFromApi(raw, index),
-        );
-        const agro = extractProductList(agroRes).map((raw, index) => ({
-          ...mapFoodProductFromApi(raw, index),
-          category: "agro",
-        }));
-        if (!cancelled) setItems([...foodsAndSpices, ...agro]);
+        /** GET /food/foods-spices (spice/masala catalog) + GET /food/agro-products — merged, deduped by product id. */
+        let index = 0;
+        const byId = new Map();
+        for (const raw of extractProductList(foodsSpicesRes)) {
+          const p = mapFoodProductFromApi(raw, index++);
+          byId.set(String(p.id), p);
+        }
+        for (const raw of extractProductList(agroRes)) {
+          const p = {
+            ...mapFoodProductFromApi(raw, index++),
+            category: "agro",
+          };
+          if (!byId.has(String(p.id))) byId.set(String(p.id), p);
+        }
+        if (!cancelled) setItems(Array.from(byId.values()));
       } catch (err) {
         if (!cancelled) setError(getApiErrorMessage(err));
       } finally {
@@ -130,6 +133,16 @@ export default function Grocery() {
           Shop live products from YUBI spices and agro catalog.
         </p>
       </section>
+
+      {showProductSections && (
+        <ProductMarqueeSection
+          title="Fresh Grocery Highlights"
+          items={filteredProducts.slice(0, 12)}
+          direction="left"
+          durationSec={42}
+          paddingTop="0"
+        />
+      )}
 
       {loading ? (
         <section style={emptyStateStyle}>Loading products...</section>

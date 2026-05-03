@@ -3,25 +3,20 @@ import { BannerSlider, CategoryImageSection, ProductMarqueeSection, PopularProdu
 import MidBannerSlider from "../../components/shared/MidBannerSlider";
 import { products as staticProducts } from "../../data";
 import { midSpiceBanners } from "../../data/banners";
+import { useFoodCategories } from "../../hooks/useFoodCategories";
 import { foodAPI } from "../../lib/api";
+import { buildSpicePageCategoryItems, filterCategoryNamesForSpices } from "../../lib/foodCategoriesUi";
 import { extractProductList, mapFoodProductFromApi } from "../../lib/foodProductUtils";
 
-function getStoredUserToken() {
-  try {
-    const raw = localStorage.getItem("yubiUser");
-    if (!raw) return null;
-    return JSON.parse(raw)?.token || null;
-  } catch {
-    return null;
-  }
-}
 import homeBanner2 from "../../assets/homebanner2.jpg.jpeg";
+import groceryBanner from "../../assets/Grocery banner.jpg";
+import groceryBanner2 from "../../assets/Grocery Banner 2.jpg";
 import yubiTruck from "../../assets/Yubi Truck 4 png.png";
 
 const spiceBanners = [
-  { id: 1, headline: "Authentic Spices from the Farm", subheadline: "Fresh, fragrant and carefully sourced", cta: "Shop Spices", route: "/spices", image: "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=1600&auto=format&fit=crop" },
+  { id: 1, headline: "Authentic Spices from the Farm", subheadline: "Fresh, fragrant and carefully sourced", cta: "Shop Spices", route: "/spices", image: groceryBanner2 },
   { id: 2, headline: "Bulk Spice Orders", subheadline: "Restaurant-ready quality and pricing", cta: "Bulk Order", route: "/spices", image: homeBanner2 },
-  { id: 3, headline: "Pure Organic Blends", subheadline: "No shortcuts, just real aroma", cta: "Explore", route: "/spices", image: "https://images.unsplash.com/photo-1506368249639-73a05d6f6488?w=1600&auto=format&fit=crop" },
+  { id: 3, headline: "Pure Organic Blends", subheadline: "No shortcuts, just real aroma", cta: "Explore", route: "/spices", image: groceryBanner },
 ];
 
 const homeShellStyle = {
@@ -31,18 +26,16 @@ const homeShellStyle = {
 };
 
 export default function HomeSpices() {
+  const { names: categoryNames } = useFoodCategories();
   const [apiSpices, setApiSpices] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
-    if (!getStoredUserToken()) return undefined;
     (async () => {
       try {
+        /** GET /food/foods-spices — show the full `products` array (same as Postman; categories may be Grocery/Spices). */
         const res = await foodAPI.getFoodsSpices();
-        const list = extractProductList(res).map((raw, i) => ({
-          ...mapFoodProductFromApi(raw, i),
-          category: "spices",
-        }));
+        const list = extractProductList(res).map((raw, i) => mapFoodProductFromApi(raw, i));
         if (!cancelled) setApiSpices(list);
       } catch {
         if (!cancelled) setApiSpices(null);
@@ -59,12 +52,21 @@ export default function HomeSpices() {
   );
   const spices = apiSpices !== null ? apiSpices : spicesFallback;
 
-  const spiceCategoryItems = spices.map((product) => ({
-    name: product.name,
-    image: product.image,
-    route: "#",
-    onClick: () => {},
-  }));
+  const spiceNames = useMemo(
+    () => (categoryNames && categoryNames.length ? filterCategoryNamesForSpices(categoryNames) : []),
+    [categoryNames],
+  );
+
+  const spiceCategoryItems = useMemo(() => {
+    if (spiceNames.length) return buildSpicePageCategoryItems(spiceNames, spices);
+    return spices.map((product) => ({
+      name: product.name,
+      image: product.image,
+      route: "#",
+      onClick: () => {},
+    }));
+  }, [spiceNames, spices]);
+
   const groupedSpices = [
     { title: "Daily Use Spices", items: spices.slice(0, 4) },
     { title: "Premium Picks", items: spices.slice(1, 5) },

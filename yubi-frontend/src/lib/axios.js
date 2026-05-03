@@ -10,7 +10,7 @@ function normalizeApiBaseUrl(url) {
   return t.endsWith('/') ? t : `${t}/`;
 }
 
-/** Client route path for full-page redirects (matches `BrowserRouter` basename from Vite `base`). */
+/** Client route path for full-page redirects (matches `BrowserRouter` basename from Vite `base`). (Important) */
 function appNavigatePath(route) {
   const base = import.meta.env.BASE_URL || '/';
   const r = String(route || '').replace(/^\//, '');

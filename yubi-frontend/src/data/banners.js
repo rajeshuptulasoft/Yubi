@@ -3,6 +3,9 @@ import homeBanner2 from "../assets/homebanner2.jpg.jpeg";
 import homeBanner3 from "../assets/homebanner3.jpg.jpeg";
 import groceryBanner1 from "../assets/Grocery banner.jpg";
 import groceryBanner2 from "../assets/Grocery Banner 2.jpg";
+import groceryBanner3 from "../assets/Grocery banner 3.jpg";
+import foodBanner3 from "../assets/food banner 3.jpg";
+import foodBanner4 from "../assets/food banner4.jpg";
 
 export const banners = [
   {
@@ -124,16 +127,16 @@ export const midSpiceBanners = [
 export const foodTextBanners = [
   {
     id: "food-text-1",
-    image: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1400&q=80",
-    headline: "Best Sellers Made Hot",
-    subheadline: "Crowd favourites rolling from breakfast plates to late dinner bowls.",
-    cta: "Explore Food",
-    route: "/home/food",
-    overlayColor: "rgba(18, 45, 18, 0.52)",
+    image: foodBanner3,
+    headline: "Fresh Plates, Fast Routes",
+    subheadline: "Comfort meals packed bright, warm and ready for the table.",
+    cta: "Order Now",
+    route: "/menu",
+    overlayColor: "rgba(75, 36, 5, 0.46)",
   },
   {
     id: "food-text-2",
-    image: "https://images.unsplash.com/photo-1543353071-873f17a7a088?w=1400&q=80",
+    image: foodBanner4,
     headline: "Fresh Plates, Fast Routes",
     subheadline: "Comfort meals packed bright, warm and ready for the table.",
     cta: "Order Now",
@@ -160,6 +163,15 @@ export const groceryTextBanners = [
     cta: "Browse Grocery",
     route: "/grocery",
     overlayColor: "rgba(20, 65, 25, 0.44)",
+  },
+  {
+    id: "grocery-text-3",
+    image: groceryBanner3,
+    headline: "Fresh Picks, Everyday Value",
+    subheadline: "Grocery essentials ready for fast home delivery.",
+    cta: "Shop Grocery",
+    route: "/grocery",
+    overlayColor: "rgba(30, 70, 28, 0.44)",
   },
 ];
 
@@ -201,6 +213,14 @@ export const groceryHeroBanners = [
     cta: "Shop Grocery",
     route: "/grocery",
     image: groceryBanner2,
+  },
+  {
+    id: "grocery-hero-3",
+    headline: "Fresh Picks, Everyday Value",
+    subheadline: "Grocery essentials ready for fast home delivery",
+    cta: "Shop Grocery",
+    route: "/grocery",
+    image: groceryBanner3,
   },
 ];
 

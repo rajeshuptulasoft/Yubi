@@ -1,7 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { BannerSlider, CategoryImageSection, ProductGridSection, ProductMarqueeSection, colors } from "./HomeSections";
 import MidBannerSlider from "../../components/shared/MidBannerSlider";
+import { useFoodCategories } from "../../hooks/useFoodCategories";
 import { foodAPI, getApiErrorMessage } from "../../lib/api";
+import { buildAgroPageCategoryItems, filterCategoryNamesForAgro } from "../../lib/foodCategoriesUi";
 import { extractProductList, mapFoodProductFromApi } from "../../lib/foodProductUtils";
 import { agroTextBanners } from "../../data/banners";
 import { useWindowSize } from "../../hooks/useWindowSize";
@@ -20,6 +22,7 @@ const agroCategories = [
 
 export default function Agro() {
   const { width } = useWindowSize();
+  const { names: categoryNames } = useFoodCategories();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -47,6 +50,14 @@ export default function Agro() {
     };
   }, []);
 
+  const agroCategoryItems = useMemo(() => {
+    if (categoryNames && categoryNames.length) {
+      const agroNames = filterCategoryNamesForAgro(categoryNames);
+      if (agroNames.length) return buildAgroPageCategoryItems(agroNames, items);
+    }
+    return agroCategories;
+  }, [categoryNames, items]);
+
   return (
     <main style={{ background: "#FFFFFF", color: colors.text }}>
       <BannerSlider items={agroBanners} />
@@ -72,7 +83,7 @@ export default function Agro() {
           Premium farming solutions and equipment for modern agriculture
         </p>
       </section>
-      <CategoryImageSection title="Agro Categories" items={agroCategories} titleInCard borderless />
+      <CategoryImageSection title="Agro Categories" items={agroCategoryItems} titleInCard borderless />
 
       {loading ? (
         <section style={{ maxWidth: 1280, margin: "0 auto", padding: "48px 24px", textAlign: "center", color: "#5C7A5C" }}>

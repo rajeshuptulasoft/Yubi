@@ -37,6 +37,15 @@ export function extractProductList(payload) {
   return [];
 }
 
+/** GET /food/categories — `{ success, categories: string[] }` or legacy shapes */
+export function extractFoodCategoriesList(payload) {
+  if (!payload) return [];
+  if (Array.isArray(payload)) return payload.map(String).filter(Boolean);
+  if (Array.isArray(payload.categories)) return payload.categories.map(String).filter(Boolean);
+  if (Array.isArray(payload.data?.categories)) return payload.data.categories.map(String).filter(Boolean);
+  return [];
+}
+
 /**
  * Map GET /food/products row → shape used by ProductCard / home sections.
  */
